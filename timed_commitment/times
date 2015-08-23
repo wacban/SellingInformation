@@ -1,0 +1,84 @@
+Protocol execution times depending on K
+times in seconds
+second force open is smart one - usually 2 times faster
+
+time test
+--- K : 18 ------------
+init   1
+commit 1
+force open 1
+force open 0
+--------------------
+--- K : 19 ------------
+init   0
+commit 1
+force open 2
+force open 1
+--------------------
+--- K : 20 ------------
+init   0
+commit 1
+force open 5
+force open 2
+--------------------
+--- K : 21 ------------
+init   1
+commit 1
+force open 8
+force open 4
+--------------------
+--- K : 22 ------------
+init   1
+commit 1
+force open 15
+force open 7
+--------------------
+--- K : 23 ------------
+init   1
+commit 1
+force open 35
+force open 16
+--------------------
+--- K : 24 ------------
+init   1
+commit 1
+force open 63
+force open 35
+--------------------
+--- K : 25 ------------
+init   0
+commit 2
+force open 110
+force open 55
+--------------------
+--- K : 26 ------------
+init   0
+commit 1
+force open 238
+force open 127
+--------------------
+--- K : 27 ------------
+init   0
+commit 1
+force open 512
+force open 265
+--------------------
+--- K : 28 ------------
+init   0
+commit 1
+force open 1078
+force open 553
+--------------------
+--- K : 29 ------------
+init   0
+commit 2
+force open 2129
+force open 1177
+--------------------
+--- K : 30 ------------
+init   0
+commit 1
+force open 4419
+force open 2201
+--------------------
+
