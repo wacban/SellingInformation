@@ -14,28 +14,28 @@ const int T = 10;
 int main(){
 
 	CryptoPP::AutoSeededRandomPool rng;
-	sha_commitment::Sender sender(&rng);
-	sha_commitment::Receiver receiver(&rng);
 
-	vector<sha_commitment::Sender> senders(T, sender);
-	vector<sha_commitment::Receiver> receivers(T, receiver);
-	cut_and_choose::Prover<sha_commitment::Sender> prover;
-	prover.v = senders;
-	cut_and_choose::Verifier<sha_commitment::Receiver> verifier;
-	verifier.v = receivers;
-	verifier.i = 2;
+	for(int i = -1; i < 10; ++i){
 
-	cut_and_choose::cut_and_choose< sha_commitment::ShaCommitment, 
-									sha_commitment::Sender,
-							  	sha_commitment::Receiver,
-									T > (&prover, &verifier);
+		sha_commitment::Sender sender(&rng);
+		sha_commitment::Receiver receiver(&rng);
 
-	cout << verifier.res << endl;
+		vector<sha_commitment::Sender> senders(T, sender);
+		vector<sha_commitment::Receiver> receivers(T, receiver);
+		cut_and_choose::Prover<sha_commitment::Sender> prover;
+		prover.v = senders;
+		cut_and_choose::Verifier<sha_commitment::Receiver> verifier;
+		verifier.v = receivers;
+		verifier.i = 2;
+
+		cut_and_choose::cut_and_choose< sha_commitment::ShaCommitment, 
+			sha_commitment::Sender,
+			sha_commitment::Receiver,
+			T > (&prover, &verifier, i);
+
+		cout << verifier.res << endl;
+
+	}
 
 	return 0;
 }
-
-
-
-
-

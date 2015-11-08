@@ -10,7 +10,7 @@
 
 using namespace std;
 using namespace CryptoPP;
-using namespace SharedSignature;
+using namespace shared_signature;
 
 static const int MESSAGE_LENGTH = 100;
 static const int INIT_TEST_COUNT = 20;
@@ -42,7 +42,7 @@ int manual_test(ECP ec, ECPPoint G, Integer n, ECPPoint Q, Integer r, Integer s,
   ECPPoint P2 = ec.Add(ec.Multiply(u1, G), ec.Multiply(u2, Q));
 
   if (P2.x != r){
-    cerr << "FAIL manual" << endl;
+    // cerr << "FAIL manual" << endl;
     return 1;
   }
   return 0;
@@ -62,7 +62,7 @@ int cryptopp_test(ECPPoint Q, Integer r, Integer s, byte *message, unsigned mess
 
   bool result = verifier.VerifyMessage( message, message_length, signature.data(), 64);
   if(!result){
-    cerr << "FAIL cryptopp" << endl;
+    // cerr << "FAIL cryptopp" << endl;
     return 1;
   }
   return 0;
@@ -74,6 +74,7 @@ int test(AutoSeededRandomPool *rng, DL_GroupParameters_EC<ECP> &ec_parameters){
 
   S s(rng, ec_parameters);
   B b(rng, ec_parameters, s.get_paillier_n(), s.get_paillier_g());
+
   s.start_init();
   b.start_init();
 
@@ -97,6 +98,7 @@ int test(AutoSeededRandomPool *rng, DL_GroupParameters_EC<ECP> &ec_parameters){
   for(int i = 0; i < SIG_TEST_COUNT; ++i){
 
     rng->GenerateBlock(message, MESSAGE_LENGTH);
+		b.set_data(message, MESSAGE_LENGTH);
 
     s.start_sig();
 
@@ -119,7 +121,9 @@ int test2(AutoSeededRandomPool *rng, DL_GroupParameters_EC<ECP> ec_parameters){
 	S s(rng, ec_parameters);
 	B b(rng, ec_parameters, s.get_paillier_n(), s.get_paillier_g());
 
-	init(&s, &b);
+	SharedSignature shared_signature;
+
+	shared_signature.init(&s, &b);
 	if (!(s.get_Q() == b.get_Q())){
 		cerr << "Q err" << endl;
 		return 1;
@@ -131,7 +135,9 @@ int test2(AutoSeededRandomPool *rng, DL_GroupParameters_EC<ECP> ec_parameters){
 
     rng->GenerateBlock(message, MESSAGE_LENGTH);
 		
-		sign(&s, &b, message, MESSAGE_LENGTH);
+		b.set_data(message, MESSAGE_LENGTH);
+
+		shared_signature.exec(&s, &b);
 
 		if (cryptopp_test(s.get_Q(), s.get_r(), s.get_s(), message, MESSAGE_LENGTH)){
       return 1;
@@ -143,6 +149,43 @@ int test2(AutoSeededRandomPool *rng, DL_GroupParameters_EC<ECP> ec_parameters){
 	}
 	return 0;
 }
+
+int test_cheat(AutoSeededRandomPool *rng, DL_GroupParameters_EC<ECP> ec_parameters){
+	S s(rng, ec_parameters);
+	B b(rng, ec_parameters, s.get_paillier_n(), s.get_paillier_g());
+
+	SharedSignature shared_signature;
+
+	shared_signature.init(&s, &b);
+	if (!(s.get_Q() == b.get_Q())){
+		cerr << "Q err" << endl;
+		return 1;
+	}
+
+	for(int i = 0; i < SIG_TEST_COUNT; ++i){
+
+		byte message[MESSAGE_LENGTH];
+
+    rng->GenerateBlock(message, MESSAGE_LENGTH);
+		
+		b.set_data(message, MESSAGE_LENGTH);
+
+		shared_signature.exec(&s, &b);
+
+		s.cheat();
+
+		if (!cryptopp_test(s.get_Q(), s.get_r(), s.get_s(), message, MESSAGE_LENGTH)){
+      return 1;
+    }
+
+    if (!manual_test(ec_parameters.GetCurve(), ec_parameters.GetSubgroupGenerator(), ec_parameters.GetGroupOrder(), s.get_Q(), s.get_r(), s.get_s(), message, MESSAGE_LENGTH)){
+      return 1;
+    }
+	}
+	return 0;
+}
+
+
 
 int main(){
 
@@ -160,14 +203,25 @@ int main(){
 #endif
 
 	for(int i = 0; i < INIT_TEST_COUNT; ++i){
-		cout << "init test: " << i + 1 << "/" << INIT_TEST_COUNT << endl;
-		if (test(&rng, ec_parameters))
+		cout << "init test 3: " << i + 1 << "/" << INIT_TEST_COUNT << endl;
+		if (test_cheat(&rng, ec_parameters)){
+			cerr << "3 err" << endl;
 			return 1;
+		}
+	}
+
+	for(int i = 0; i < INIT_TEST_COUNT; ++i){
+		cout << "init test: " << i + 1 << "/" << INIT_TEST_COUNT << endl;
+		if (test(&rng, ec_parameters)){
+			cerr << "1 err" << endl;
+			return 1;
+		}
 	}
 
 	for(int i = 0; i < INIT_TEST_COUNT; ++i){
 		cout << "init test 2: " << i + 1 << "/" << INIT_TEST_COUNT << endl;
 		if (test2(&rng, ec_parameters)){
+			cerr << "2 err" << endl;
 			return 1;
 		}
 	}

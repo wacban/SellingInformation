@@ -3,7 +3,7 @@
 
 #include <vector>
 
-namespace cut_and_choose{
+namespace cut_and_choose {
 
 template <typename A>
 class Prover {
@@ -25,21 +25,29 @@ class Verifier {
 // A - first party of P
 // B - second party of P
 // T - security parameter - how many times protocol will be executed
+// cheat - if different than -1 prover will not reveal real data in 
+// ith instance - for testing
 template <typename P, typename A, typename B, unsigned T>
-void cut_and_choose(Prover<A> *p, Verifier<B> *v){
+void cut_and_choose(Prover<A> *p, Verifier<B> *v, int cheat = -1){
 	P protocol;
 	for(int i = 0; i < T; ++i){
 		protocol.init(&p->v[i], &v->v[i]);
 		protocol.exec(&p->v[i], &v->v[i]);
 	}
 
-	int i = v->getI();
+	if (cheat != -1) {
+		p->v[cheat].cheat();
+	}
+
+	int chosen_i = v->getI();
 	v->res = true;
 	for(int i = 0; i < T; ++i){
-		protocol.open(&p->v[i], &v->v[i]);
-		if (!v->v[i].getOpenVerified()){
-			v->res = false;
-			return;
+		if (i != chosen_i){
+			protocol.open(&p->v[i], &v->v[i]);
+			if (!v->v[i].getOpenVerified()){
+				v->res = false;
+				return;
+			}
 		}
 	}
 }

@@ -1,5 +1,6 @@
 
 #include "sha_commitment.h"
+#include "../common/common.h"
 
 #include <iostream>
 #include <cryptopp/osrng.h>
@@ -12,22 +13,21 @@ const int T = 100000;
 
 int main(){
 
-	AutoSeededRandomPool rng;
-
 	ShaCommitment shaCommitment;
 
 	// test valid
 	for(int i = 0; i < T; ++i){
-		Sender s(&rng);
-		Receiver r(&rng);
-
-		Integer x(rng, (i % 1024) + 1);
+		Sender s;
+		Receiver r;
+		
+		vector<byte> x(200);
+		common::rng.GenerateBlock(x.data(), x.size());
 		s.m = x;
 
 		shaCommitment.init(&s, &r);
 		shaCommitment.exec(&s, &r);
 
-		if (!equal(s.com, s.com+COM_SIZE, r.com)){
+		if (s.com != r.com) {
 			cerr << "ERR com not equal" << endl;
 			return 1;
 		}
@@ -49,22 +49,23 @@ int main(){
 
 	for(int i = 0; i < T; ++i){
 	
-		Sender s(&rng);
-		Receiver r(&rng);
+		Sender s;
+		Receiver r;
 
-		Integer x(rng, (i % 1024) + 1);
+		vector<byte> x(200);
+		common::rng.GenerateBlock(x.data(), x.size());
 		s.m = x;
 
 		shaCommitment.init(&s, &r);
 		shaCommitment.exec(&s, &r);
 
-		if (!equal(s.com, s.com+COM_SIZE, r.com)){
+		if (s.com != r.com){
 			cerr << "ERR com not equal" << endl;
 			return 1;
 		}
 
 		// change m
-		++s.m;
+		(*s.m.begin()) = !(*s.m.begin());
 
 		shaCommitment.open(&s, &r);
 		if (s.m != r.m){
@@ -83,16 +84,17 @@ int main(){
 
 	for(int i = 0; i < T; ++i){
 	
-		Sender s(&rng);
-		Receiver r(&rng);
+		Sender s;
+		Receiver r;
 
-		Integer x(rng, (i % 1024) + 1);
+		vector<byte> x(200);
+		common::rng.GenerateBlock(x.data(), x.size());
 		s.m = x;
 
 		shaCommitment.init(&s, &r);
 		shaCommitment.exec(&s, &r);
 
-		if (!equal(s.com, s.com+COM_SIZE, r.com)){
+		if (s.com != r.com){
 			cerr << "ERR com not equal" << endl;
 			return 1;
 		}

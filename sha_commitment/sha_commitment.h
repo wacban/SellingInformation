@@ -5,24 +5,29 @@
 
 #include <cryptopp/integer.h>
 #include <cryptopp/osrng.h>
+#include <array>
+#include <vector>
 
 namespace sha_commitment {
 
-const unsigned N = 20; // security parameter in bytes
+const unsigned N = 32; // security parameter in bytes
 
 const unsigned COM_SIZE = 256/8;
+
+typedef std::array<byte, COM_SIZE> TCommitment;
 
 class Sender {
 
 	public:
 
-	Sender(CryptoPP::AutoSeededRandomPool *rng) : rng(rng) {}
-
-	CryptoPP::AutoSeededRandomPool *rng;
-	CryptoPP::Integer m;
+	std::vector<byte> m;
 	byte seed[N];
-	byte com[COM_SIZE];
 
+	TCommitment com;
+
+	void cheat(){
+		*m.begin()= !(*m.begin());
+	}
 };
 
 class Receiver {
@@ -31,12 +36,9 @@ class Receiver {
 
 	public:
 
-	Receiver(CryptoPP::AutoSeededRandomPool *rng) : rng(rng) {}
-
-	CryptoPP::AutoSeededRandomPool *rng;
-	CryptoPP::Integer m;
+	std::vector<byte> m;
 	byte seed[N];
-	byte com[COM_SIZE];
+	TCommitment com;
 
 	void setOpenVerified(bool val){
 		open_verified = val;

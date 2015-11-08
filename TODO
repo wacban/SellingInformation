@@ -1,0 +1,11 @@
+
+
+- bitcoin
+- add exceptions and remove messages
+- logging
+- CommonUtils - rng, ec_parameters, ..
+- SecurityParams - T, K ...
+- commitment should be Commiter Receiver
+- typedef array in commitments
+- in signature both parites should know data and verify it
+- open - most checks should take place in subprotocols - verify it

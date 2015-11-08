@@ -12,7 +12,7 @@
 
 #include <exception>
 
-namespace TimedCommitment{
+namespace timed_commitment {
 
 	const unsigned B = 128;     // how many primes in commit in h exponent
 	const unsigned R = 4*B;     // security parametar in zk proofs in commit

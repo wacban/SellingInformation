@@ -14,7 +14,7 @@ using namespace CryptoPP;
 
 using namespace std;
 
-namespace SharedSignature{
+namespace shared_signature {
 
 	Integer m_to_int(byte *m, unsigned m_len, unsigned ret_byte_count){
 		SHA256 sha256;
@@ -113,7 +113,7 @@ namespace SharedSignature{
 		cb = a_times_b_mod_c(c2, paillier.enc(u*n), paillier.get_n2());
 	}
 
-	void init(S *s, B *b){
+	void SharedSignature::init(S *s, B *b) {
 		s->start_init();
 		b->start_init();
 
@@ -125,10 +125,10 @@ namespace SharedSignature{
 		}
 	}
 
-	void sign(S *s, B *b, byte *data, unsigned data_length){
+	void SharedSignature::exec(S *s, B *b) {
 		s->start_sig();
 
-		b->cont_sig(s->get_Ks(), s->get_cs(), data, data_length);
+		b->cont_sig(s->get_Ks(), s->get_cs(), b->get_data(), b->get_data_length());
 
 		s->finish_sig(b->get_r(), b->get_cb());
 
@@ -142,9 +142,23 @@ namespace SharedSignature{
 		ECDSA<ECP, SHA256>::Signer signer;
 		ECDSA<ECP, SHA256>::Verifier verifier(publicKey);
 
-		bool result = verifier.VerifyMessage(data, data_length, signature, 64);
+		bool result = verifier.VerifyMessage(b->get_data(), b->get_data_length(), signature, 64);
 		if (!result){
 			throw ProtocolException("Invalid signature generated!");
 		}
+	}
+
+	void SharedSignature::open(S *s, B *b) {
+
+		vector<byte> signature = s->get_signature();
+
+		ECDSA<ECP, SHA256>::PublicKey publicKey;
+		publicKey.Initialize(ASN1::secp256k1(), b->get_Q());
+
+		ECDSA<ECP, SHA256>::Signer signer;
+		ECDSA<ECP, SHA256>::Verifier verifier(publicKey);
+
+		bool result = verifier.VerifyMessage(b->get_data(), b->get_data_length(), signature.data(), signature.size());
+		b->setOpenVerified(result);
 	}
 }

@@ -1,11 +1,11 @@
 
 FLAGS=-std=c++11 -Wall -Wextra -Wno-unused
 
-ALL=test_cc_sha_commit
+ALL=test_cc_sha_commit test_cc_shared_signature
 
 all: $(ALL)
 
-$(ALL): %: %.cpp ../sha_commitment/sha_commitment.o 
+$(ALL): %: %.cpp ../sha_commitment/sha_commitment.o ../shared_signature/shared_sig.o ../shared_signature/paillier.o
 	g++ $(FLAGS) -o $@ $^ -lcryptopp
 
 %.o: %.cpp

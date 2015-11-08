@@ -10,7 +10,7 @@
 
 #include "shared_sig.h"
 
-using namespace SharedSignature;
+using namespace shared_signature;
 
 using namespace CryptoPP;
 

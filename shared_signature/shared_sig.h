@@ -1,25 +1,16 @@
 #ifndef _SHARED_SIG_H_
 #define _SHARED_SIG_H_
 
+
+#include "paillier.h"
+#include "../protocol.h"
+
 #include <cryptopp/ecp.h>
 #include <cryptopp/oids.h>
 #include <cryptopp/eccrypto.h>
 #include <cryptopp/osrng.h>
 
-#include "paillier.h"
-
-namespace SharedSignature {
-
-	class ProtocolException: public std::exception {
-		std::string msg;
-		public:
-		ProtocolException(const std::string &msg):msg(msg){
-		}
-		virtual const char* what() const throw(){
-			return msg.c_str();
-		}
-	};
-
+namespace shared_signature {
 	// hash message
 	// take ret_byte_count leftmost bytes
 	// convert to Integer
@@ -62,7 +53,7 @@ namespace SharedSignature {
 				return ec_parameters;
 			}
 
-			CryptoPP::Integer reveal_ds(){
+			CryptoPP::Integer get_ds(){
 				return ds;
 			}
 
@@ -103,12 +94,19 @@ namespace SharedSignature {
 			}
 			
 			std::vector<byte> get_signature(){
+
 				std::vector<byte> signature;
 				signature.resize(64);
+
 				r.Encode(signature.data(), 32);
-				s.Encode(signature.data()+32, 32);
+				s.Encode(signature.data() + 32, 32);
 
 				return signature;
+			}
+
+			void cheat(){
+				r = CryptoPP::Integer(*rng, 1, n);
+				s = CryptoPP::Integer(*rng, 1, n);
 			}
 
 			void start_init();
@@ -118,6 +116,8 @@ namespace SharedSignature {
 			void start_sig();
 
 			void finish_sig(CryptoPP::Integer r, CryptoPP::Integer cb);
+
+
 	};
 
 	class B {
@@ -144,6 +144,9 @@ namespace SharedSignature {
 			CryptoPP::Integer r;
 			CryptoPP::Integer cb;
 
+			std::vector<byte> data;
+			
+			bool open_verified;
 		public:
 			B(){
 			}
@@ -177,6 +180,27 @@ namespace SharedSignature {
 				return cb;
 			}
 
+			byte *get_data(){
+				return data.data();
+			}
+
+			unsigned get_data_length(){
+				return data.size();
+			}	
+
+			void set_data(byte *data, unsigned length){
+				this->data.resize(length);
+				copy(data, data + length, this->data.begin());
+			}
+
+			void setOpenVerified(bool val){
+				open_verified = val;
+			}
+
+			bool getOpenVerified(){
+				return open_verified;
+			}
+
 			void start_init();
 
 			void finish_init(CryptoPP::ECPPoint Qs);
@@ -184,8 +208,12 @@ namespace SharedSignature {
 			void cont_sig(CryptoPP::ECPPoint Ks, CryptoPP::Integer cs, byte *m, unsigned m_len);
 	};
 
-	void init(S *s, B *b);
-	void sign(S *s, B *b, byte *data, unsigned data_length);
+	class SharedSignature : public Protocol<S, B> {
+		public:
+			void init(S *, B *);
+			void exec(S *, B *);
+			void open(S *, B *);
+	};
 }
 
 #endif

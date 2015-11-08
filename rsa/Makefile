@@ -1,11 +1,11 @@
 
 FLAGS=-std=c++11 -Wall -Wextra -Wno-unused
 
-ALL=test_sha_commit
+ALL=test_square_root
 
 all: $(ALL)
 
-$(ALL): %: %.cpp sha_commitment.o ../common/common.o
+$(ALL): %: %.cpp square_root.o
 	g++ $(FLAGS) -o $@ $^ -lcryptopp
 
 %.o: %.cpp

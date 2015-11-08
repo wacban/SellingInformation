@@ -9,7 +9,7 @@ using namespace std;
 
 using namespace CryptoPP;
 
-namespace TimedCommitment{
+namespace timed_commitment {
 
 	Integer exp(Integer x, unsigned n){
 		Integer res = 1;
