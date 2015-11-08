@@ -3,7 +3,7 @@ FLAGS=-std=c++11 -Wall -Wextra -Wno-unused
 
 ALL=main
 
-EXTERNAL_OBJ= ../bitcoin/bitcoin.o ../shared_signature/shared_sig.o ../shared_signature/paillier.o ../rsa/square_root.o ../timed_commitment/regular_commitment.o ../timed_commitment/timed_commitment.o ../timed_commitment/bit_utils.o ../common/common.o ../sha_commitment/sha_commitment.o
+EXTERNAL_OBJ= ../bitcoin/bitcoin.o ../shared_signature/shared_sig.o ../shared_signature/paillier.o ../common/square_root.o ../timed_commitment/regular_commitment.o ../timed_commitment/timed_commitment.o ../timed_commitment/bit_utils.o ../common/common.o ../sha_commitment/sha_commitment.o
 
 all: $(ALL)
 

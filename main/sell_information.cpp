@@ -10,10 +10,6 @@
 using namespace CryptoPP;
 using namespace std;
 
-const unsigned T = 10;
-const unsigned K = 10;	// TODO
-const unsigned L = 10;	// TODO
-
 namespace sell_information {
 
 static array<common::TSHA256Digest, L> genKeys(const vector<byte>& signature) {
@@ -205,6 +201,27 @@ void SingleSellInformationProtocol::open(SingleSeller *single_seller, SingleBuye
 	single_buyer->setOpenVerified(single_buyer->shared_signature_b.getOpenVerified());
 }
 
+void Seller::findRoots() {
+	for(unsigned i = 0; i < L; ++i){
+		array<Integer, 4> roots = square_root.all_square_roots(y[i]);
+		r1[i] = roots[0];
+		r2[i] = roots[1];
+		if (common::rng.GenerateBit() == 1) {
+			swap(r1[i], r2[i]);
+		}
+	}
+}
+
+void Seller::encryptRoots() {
+	for(unsigned i = 0; i < L; ++i) {
+		// c1[i] = common::enc( //TODO
+	}
+}
+
+void Buyer::pickR(){
+	this->r = Integer(common::rng, 0, T-1).ConvertToLong();
+}
+
 void SellInformationProtocol::init(Seller *seller, Buyer *buyer) {
 	if (seller->get_n() != buyer->get_n()){
 		throw ProtocolException("Not matching n");
@@ -250,9 +267,12 @@ void SellInformationProtocol::exec(Seller *seller, Buyer *buyer){
 	prover.v = single_sellers;
 	cut_and_choose::Verifier<SingleBuyer> verifier;
 	verifier.v = single_buyers;
-	verifier.i = 2;	// TODO
 
-	cut_and_choose::cut_and_choose< SingleSellInformationProtocol, 
+	buyer->pickR();
+
+	verifier.i = buyer->getR();
+
+	cut_and_choose::cut_and_choose<SingleSellInformationProtocol, 
 		SingleSeller,
 		SingleBuyer,
 		T > (&prover, &verifier);
@@ -260,6 +280,14 @@ void SellInformationProtocol::exec(Seller *seller, Buyer *buyer){
 	if (!verifier.res) {
 		throw ProtocolException("Generating signatures and keys failed!");
 	}
+
+	// seller->setSingleSeller(prover.v[verifier.i]);
+	// buyer->setSingleBuyer(verifier.v[verifier.i]);
+
+	buyer->genSquares();
+	seller->acceptSquares(buyer->getSquares());
+	seller->findRoots();
+	seller->encryptRoots();
 }
 
 void SellInformationProtocol::open(Seller *seller, Buyer *buyer){

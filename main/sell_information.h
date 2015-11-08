@@ -5,12 +5,16 @@
 #include "../bitcoin/bitcoin.h"
 #include "../common/common.h"
 #include "../protocol.h"
-#include "../rsa/square_root.h"
+#include "../common/square_root.h"
 
 #include <cryptopp/integer.h>
 #include <cryptopp/osrng.h>
 
 namespace sell_information {
+
+const unsigned T = 10;
+const unsigned K = 10;	// TODO
+const unsigned L = 10;	// TODO
 
 class Seller {
 	CryptoPP::AutoSeededRandomPool *rng;
@@ -24,7 +28,11 @@ class Seller {
 
 	BitcoinAddress bitcoin_address;
 
-	SquareRoot square_root;
+	common::SquareRoot square_root;
+
+	std::array<CryptoPP::Integer, L> y;
+	std::array<CryptoPP::Integer, L> r1;
+	std::array<CryptoPP::Integer, L> r2;
 
 	public:
 	Seller(	CryptoPP::AutoSeededRandomPool *rng, 
@@ -53,6 +61,14 @@ class Seller {
 	BitcoinAddress get_address(){
 		return bitcoin_address;
 	}
+
+	void acceptSquares(const std::array<CryptoPP::Integer, L>& y){
+		this->y = y;
+	}
+
+	void findRoots();
+	
+	void encryptRoots();
 };
 
 class Buyer {
@@ -65,6 +81,11 @@ class Buyer {
 	unsigned price;
 
 	BitcoinAddress bitcoin_address;
+
+	std::array<CryptoPP::Integer, L> x;
+	std::array<CryptoPP::Integer, L> y;
+
+	int r;
 
 	public:
 	Buyer(CryptoPP::AutoSeededRandomPool *rng, 
@@ -92,6 +113,23 @@ class Buyer {
 
 	BitcoinAddress get_address(){
 		return bitcoin_address;
+	}
+
+	void pickR();
+
+	int getR(){
+		return r;
+	}
+
+	void genSquares(){
+		for(unsigned i = 0; i < L; ++i) {
+			x[i] = CryptoPP::Integer(common::rng, 0, n/2);
+			y[i] = (x[i] * x[i]) % n;
+		}
+	}
+
+	std::array<CryptoPP::Integer, L> getSquares(){
+		return y;
 	}
 };
 

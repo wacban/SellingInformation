@@ -9,3 +9,5 @@
 - typedef array in commitments
 - in signature both parites should know data and verify it
 - open - most checks should take place in subprotocols - verify it
+- why buyer samples from Zn/2 ?? why not Zn ? we can't even validate it ?
+- cut and choose verify that i is in good range [0, T)
