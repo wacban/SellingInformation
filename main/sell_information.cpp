@@ -7,6 +7,7 @@
 #include "../common/log.h"
 #include <vector>
 #include <iostream>
+#include <numeric>
 
 using namespace CryptoPP;
 using namespace std;
