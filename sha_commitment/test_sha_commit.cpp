@@ -21,7 +21,7 @@ int main(){
 		Receiver r;
 		
 		vector<byte> x(200);
-		common::rng.GenerateBlock(x.data(), x.size());
+		common::rng().GenerateBlock(x.data(), x.size());
 		s.m = x;
 
 		shaCommitment.init(&s, &r);
@@ -48,12 +48,11 @@ int main(){
 	}
 
 	for(int i = 0; i < T; ++i){
-	
 		Sender s;
 		Receiver r;
 
 		vector<byte> x(200);
-		common::rng.GenerateBlock(x.data(), x.size());
+		common::rng().GenerateBlock(x.data(), x.size());
 		s.m = x;
 
 		shaCommitment.init(&s, &r);
@@ -66,8 +65,16 @@ int main(){
 
 		// change m
 		(*s.m.begin()) = !(*s.m.begin());
-
-		shaCommitment.open(&s, &r);
+		bool ok = false;
+		try {
+			shaCommitment.open(&s, &r);
+		} catch (ProtocolException &e) {
+			ok = true;
+		}
+		if (!ok) {
+			cerr << "didn't throw!" << endl;
+			return 1;
+		}
 		if (s.m != r.m){
 			cerr << "ERR s.m != r.m" << endl;
 			return 1;
@@ -88,7 +95,7 @@ int main(){
 		Receiver r;
 
 		vector<byte> x(200);
-		common::rng.GenerateBlock(x.data(), x.size());
+		common::rng().GenerateBlock(x.data(), x.size());
 		s.m = x;
 
 		shaCommitment.init(&s, &r);
@@ -101,8 +108,16 @@ int main(){
 
 		// change seed
 		++s.seed[1];
-
-		shaCommitment.open(&s, &r);
+		bool ok = false;
+		try {
+			shaCommitment.open(&s, &r);
+		} catch (ProtocolException &e) {
+			ok = true;
+		}
+		if (!ok) {
+			cerr << "ERR didn't throw!" << endl;
+			return 1;
+		}
 		if (s.m != r.m){
 			cerr << "ERR s.m != r.m" << endl;
 			return 1;

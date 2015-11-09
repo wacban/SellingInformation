@@ -68,12 +68,12 @@ int cryptopp_test(ECPPoint Q, Integer r, Integer s, byte *message, unsigned mess
   return 0;
 }
 
-int test(AutoSeededRandomPool *rng, DL_GroupParameters_EC<ECP> &ec_parameters){
+int test(){
   ECPPoint Q; // public key
   byte message[MESSAGE_LENGTH];
 
-  S s(rng, ec_parameters);
-  B b(rng, ec_parameters, s.get_paillier_n(), s.get_paillier_g());
+  S s;
+  B b(s.get_paillier_n(), s.get_paillier_g());
 
   s.start_init();
   b.start_init();
@@ -97,7 +97,7 @@ int test(AutoSeededRandomPool *rng, DL_GroupParameters_EC<ECP> &ec_parameters){
 
   for(int i = 0; i < SIG_TEST_COUNT; ++i){
 
-    rng->GenerateBlock(message, MESSAGE_LENGTH);
+    common::rng().GenerateBlock(message, MESSAGE_LENGTH);
 		b.set_data(message, MESSAGE_LENGTH);
 
     s.start_sig();
@@ -110,16 +110,20 @@ int test(AutoSeededRandomPool *rng, DL_GroupParameters_EC<ECP> &ec_parameters){
       return 1;
     }
 
-    if (manual_test(ec_parameters.GetCurve(), ec_parameters.GetSubgroupGenerator(), ec_parameters.GetGroupOrder(), Q, s.get_r(), s.get_s(), message, MESSAGE_LENGTH)){
+    if (manual_test(
+			common::ec_parameters().GetCurve(), 
+			common::ec_parameters().GetSubgroupGenerator(),
+			common::ec_parameters().GetGroupOrder(),
+			Q, s.get_r(), s.get_s(), message, MESSAGE_LENGTH)){
       return 1;
     }
   }
   return 0;
 }
 
-int test2(AutoSeededRandomPool *rng, DL_GroupParameters_EC<ECP> ec_parameters){
-	S s(rng, ec_parameters);
-	B b(rng, ec_parameters, s.get_paillier_n(), s.get_paillier_g());
+int test2(){
+	S s;
+	B b(s.get_paillier_n(), s.get_paillier_g());
 
 	SharedSignature shared_signature;
 
@@ -133,7 +137,7 @@ int test2(AutoSeededRandomPool *rng, DL_GroupParameters_EC<ECP> ec_parameters){
 
 		byte message[MESSAGE_LENGTH];
 
-    rng->GenerateBlock(message, MESSAGE_LENGTH);
+    common::rng().GenerateBlock(message, MESSAGE_LENGTH);
 		
 		b.set_data(message, MESSAGE_LENGTH);
 
@@ -143,16 +147,20 @@ int test2(AutoSeededRandomPool *rng, DL_GroupParameters_EC<ECP> ec_parameters){
       return 1;
     }
 
-    if (manual_test(ec_parameters.GetCurve(), ec_parameters.GetSubgroupGenerator(), ec_parameters.GetGroupOrder(), s.get_Q(), s.get_r(), s.get_s(), message, MESSAGE_LENGTH)){
+    if (manual_test(
+			common::ec_parameters().GetCurve(), 
+			common::ec_parameters().GetSubgroupGenerator(),
+			common::ec_parameters().GetGroupOrder(),
+			s.get_Q(), s.get_r(), s.get_s(), message, MESSAGE_LENGTH)){
       return 1;
     }
 	}
 	return 0;
 }
 
-int test_cheat(AutoSeededRandomPool *rng, DL_GroupParameters_EC<ECP> ec_parameters){
-	S s(rng, ec_parameters);
-	B b(rng, ec_parameters, s.get_paillier_n(), s.get_paillier_g());
+int test_cheat(){
+	S s;
+	B b(s.get_paillier_n(), s.get_paillier_g());
 
 	SharedSignature shared_signature;
 
@@ -166,7 +174,7 @@ int test_cheat(AutoSeededRandomPool *rng, DL_GroupParameters_EC<ECP> ec_paramete
 
 		byte message[MESSAGE_LENGTH];
 
-    rng->GenerateBlock(message, MESSAGE_LENGTH);
+    common::rng().GenerateBlock(message, MESSAGE_LENGTH);
 		
 		b.set_data(message, MESSAGE_LENGTH);
 
@@ -178,7 +186,11 @@ int test_cheat(AutoSeededRandomPool *rng, DL_GroupParameters_EC<ECP> ec_paramete
       return 1;
     }
 
-    if (!manual_test(ec_parameters.GetCurve(), ec_parameters.GetSubgroupGenerator(), ec_parameters.GetGroupOrder(), s.get_Q(), s.get_r(), s.get_s(), message, MESSAGE_LENGTH)){
+    if (!manual_test(
+			common::ec_parameters().GetCurve(),
+			common::ec_parameters().GetSubgroupGenerator(),
+			common::ec_parameters().GetGroupOrder(),
+			s.get_Q(), s.get_r(), s.get_s(), message, MESSAGE_LENGTH)){
       return 1;
     }
 	}
@@ -188,11 +200,6 @@ int test_cheat(AutoSeededRandomPool *rng, DL_GroupParameters_EC<ECP> ec_paramete
 
 
 int main(){
-
-	AutoSeededRandomPool rng;
-
-	DL_GroupParameters_EC<ECP> ec_parameters;
-	ec_parameters.Initialize(CryptoPP::ASN1::secp256k1());
 
 #if 0
 	cout << "a: " << ec.GetA() << endl;
@@ -204,7 +211,7 @@ int main(){
 
 	for(int i = 0; i < INIT_TEST_COUNT; ++i){
 		cout << "init test 3: " << i + 1 << "/" << INIT_TEST_COUNT << endl;
-		if (test_cheat(&rng, ec_parameters)){
+		if (test_cheat()){
 			cerr << "3 err" << endl;
 			return 1;
 		}
@@ -212,7 +219,7 @@ int main(){
 
 	for(int i = 0; i < INIT_TEST_COUNT; ++i){
 		cout << "init test: " << i + 1 << "/" << INIT_TEST_COUNT << endl;
-		if (test(&rng, ec_parameters)){
+		if (test()){
 			cerr << "1 err" << endl;
 			return 1;
 		}
@@ -220,7 +227,7 @@ int main(){
 
 	for(int i = 0; i < INIT_TEST_COUNT; ++i){
 		cout << "init test 2: " << i + 1 << "/" << INIT_TEST_COUNT << endl;
-		if (test2(&rng, ec_parameters)){
+		if (test2()){
 			cerr << "2 err" << endl;
 			return 1;
 		}

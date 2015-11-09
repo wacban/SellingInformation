@@ -9,7 +9,7 @@ using namespace CryptoPP;
 using namespace std;
 using namespace timed_commitment;
 
-void test(AutoSeededRandomPool &rng, int K, string m, bool t = false){
+void test(int K, string m, bool t = false){
 
   time_t start, end; 
 
@@ -18,7 +18,7 @@ void test(AutoSeededRandomPool &rng, int K, string m, bool t = false){
   }
 
   start = time(NULL);
-  Commiter c(&rng);
+  Commiter c;
   end = time(NULL);
 
   if (t){
@@ -30,7 +30,7 @@ void test(AutoSeededRandomPool &rng, int K, string m, bool t = false){
   Commitment com = c.commit(K, BitUtils::string_to_bits(m));
 
   // cerr << "receiver" << endl;
-  Receiver r(&rng);
+  Receiver r;
 	r.accept_commitment(com);
   
   // cerr << "zk" << endl;
@@ -93,10 +93,10 @@ void test(AutoSeededRandomPool &rng, int K, string m, bool t = false){
   }
 }
 
-int test2(AutoSeededRandomPool &rng, int K, string m){
+int test2(int K, string m){
 
-  Commiter c(&rng);
-  Receiver r(&rng);
+  Commiter c;
+  Receiver r;
 	commit(&c, &r, 16, BitUtils::string_to_bits(m));
 
 	string m1 = BitUtils::bits_to_string(open_commitment(&c, &r));
@@ -121,16 +121,16 @@ int test2(AutoSeededRandomPool &rng, int K, string m){
 }
 
 int main(){
-  AutoSeededRandomPool rng;
   string m = "hello world";
 
   cerr << "small test" << endl;
+
   for(int i = 0; i < 10; ++i){
     cerr << i + 1 << "/" << 10 << endl;
     byte m[i+5+1];
     m[i+5] = '\0';
-    rng.GenerateBlock(m, i+5);
-    test(rng, 18, string((char *)m));
+    common::rng().GenerateBlock(m, i+5);
+    test(18, string((char *)m));
   }
 
 	cerr << "small test 2" << endl;
@@ -138,14 +138,14 @@ int main(){
 	  cerr << i + 1 << "/" << 10 << endl;
     byte m[i+5+1];
     m[i+5] = '\0';
-    rng.GenerateBlock(m, i+5);
-    test2(rng, 18, string((char *)m));
+    common::rng().GenerateBlock(m, i+5);
+    test2(18, string((char *)m));
 	}
 
   cerr << "time test" << endl;
   for(int K = 18; K < 21; ++K){
     string m = "hello world";
-    test(rng, K, m, true);
+    test(K, m, true);
   }
 }
 

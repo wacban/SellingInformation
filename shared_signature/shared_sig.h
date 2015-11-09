@@ -4,6 +4,7 @@
 
 #include "paillier.h"
 #include "../protocol.h"
+#include "../common/common.h"
 
 #include <cryptopp/ecp.h>
 #include <cryptopp/oids.h>
@@ -18,10 +19,6 @@ namespace shared_signature {
 
 	class S {
 		private:
-
-			CryptoPP::AutoSeededRandomPool *rng;
-
-			CryptoPP::DL_GroupParameters_EC<CryptoPP::ECP> ec_parameters;
 			CryptoPP::ECP ec;
 			CryptoPP::ECPPoint G; // subgroup generator - base point
 			CryptoPP::Integer n;  // subgroup order
@@ -45,13 +42,7 @@ namespace shared_signature {
 
 		public:
 
-			S(){}
-
-			S(CryptoPP::AutoSeededRandomPool *rng, CryptoPP::DL_GroupParameters_EC<CryptoPP::ECP> ec_parameters);
-
-			CryptoPP::DL_GroupParameters_EC<CryptoPP::ECP> get_ec_parameters(){
-				return ec_parameters;
-			}
+			S();
 
 			CryptoPP::Integer get_ds(){
 				return ds;
@@ -105,8 +96,8 @@ namespace shared_signature {
 			}
 
 			void cheat(){
-				r = CryptoPP::Integer(*rng, 1, n);
-				s = CryptoPP::Integer(*rng, 1, n);
+				r = CryptoPP::Integer(common::rng(), 1, n);
+				s = CryptoPP::Integer(common::rng(), 1, n);
 			}
 
 			void start_init();
@@ -122,10 +113,6 @@ namespace shared_signature {
 
 	class B {
 		private:
-
-			CryptoPP::AutoSeededRandomPool *rng;
-
-			CryptoPP::DL_GroupParameters_EC<CryptoPP::ECP> ec_parameters;
 			CryptoPP::ECP ec;
 			CryptoPP::ECPPoint G; // subgroup generator - base point
 			CryptoPP::Integer n;  // subgroup order
@@ -151,14 +138,8 @@ namespace shared_signature {
 			B(){
 			}
 
-			B(CryptoPP::AutoSeededRandomPool *rng,
-				CryptoPP::DL_GroupParameters_EC<CryptoPP::ECP> ec_parameters,
-			 	CryptoPP::Integer paillier_n,
+			B(CryptoPP::Integer paillier_n,
 				CryptoPP::Integer paillier_g);
-
-			CryptoPP::DL_GroupParameters_EC<CryptoPP::ECP> get_ec_parameters(){
-				return ec_parameters;
-			}
 
 			CryptoPP::ECPPoint get_Qs(){
 				return Qs;

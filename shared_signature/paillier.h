@@ -2,7 +2,6 @@
 #define _PAILLIER_H_
 
 #include "cryptopp/integer.h"
-#include "cryptopp/osrng.h"
 
 class PaillierException: public std::exception {
 	std::string msg;
@@ -17,8 +16,6 @@ class PaillierException: public std::exception {
 class Paillier{
 
 	private:
-
-		CryptoPP::AutoSeededRandomPool *rng;
 
 		CryptoPP::Integer p;
 		CryptoPP::Integer q;
@@ -37,9 +34,9 @@ class Paillier{
 		Paillier():n(CryptoPP::Integer::Zero()){
 		}
 
-		Paillier(CryptoPP::AutoSeededRandomPool *rng, unsigned bits);  // gen new randoms,
+		Paillier(unsigned bits);  // gen new randoms,
 
-		Paillier(CryptoPP::AutoSeededRandomPool *rng, CryptoPP::Integer n, CryptoPP::Integer g); // client -pubkey only
+		Paillier(CryptoPP::Integer n, CryptoPP::Integer g); // client -pubkey only
 
 		CryptoPP::Integer get_n();
 		CryptoPP::Integer get_n2();

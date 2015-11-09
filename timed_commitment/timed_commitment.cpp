@@ -49,7 +49,7 @@ namespace timed_commitment {
 	// generate safe prime that is: p = 2*q + 1, q is prime too
 	Integer Commiter::gen_prime(unsigned bits){
 
-		PrimeAndGenerator gen_p(1, *rng, bits);
+		PrimeAndGenerator gen_p(1, common::rng(), bits);
 		Integer res = gen_p.Prime();
 		// sanity check p = 3 mod 4
 		if (res % 4 != 3){
@@ -105,7 +105,7 @@ namespace timed_commitment {
 		}
 		l = m.size();
 
-		h = Integer(*rng, 2, n-1);
+		h = Integer(common::rng(), 2, n-1);
 		g = get_g(n, h);
 		order = find_order(p, q, g);
 
@@ -150,7 +150,7 @@ namespace timed_commitment {
 
 		alpha.resize(com.K+1);
 		for(unsigned i = 1; i <= com.K; ++i){ 
-			alpha[i].Randomize(*rng, Integer::Zero(), order-1);
+			alpha[i].Randomize(common::rng(), Integer::Zero(), order-1);
 		}
 		z.resize(com.K+1);
 		w.resize(com.K+1);
@@ -199,10 +199,6 @@ namespace timed_commitment {
 		return vp;
 	}
 
-	Receiver::Receiver(CryptoPP::AutoSeededRandomPool *rng):
-		rng(rng){
-	}
-
 	void Receiver::accept_commitment(const Commitment &_com){
 		this->com = _com;
 		if (com.g != get_g(com.n, com.h)){
@@ -224,7 +220,7 @@ namespace timed_commitment {
 		res.resize(com.K+1);
 
 		for(unsigned i = 1; i <= com.K; ++i){
-			commit_values[i].Randomize(*rng, Integer::Zero(), R);
+			commit_values[i].Randomize(common::rng(), Integer::Zero(), R);
 			res[i] = regular_commit(commit_values[i]);
 		}
 		return res;

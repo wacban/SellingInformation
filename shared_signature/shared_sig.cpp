@@ -26,13 +26,11 @@ namespace shared_signature {
 	/**************************
 	 * S
 	 **************************/
-	S::S(AutoSeededRandomPool *rng, DL_GroupParameters_EC<ECP> ec_parameters):
-		rng(rng),
-		ec_parameters(ec_parameters),
-		ec(ec_parameters.GetCurve()),
-		G(ec_parameters.GetSubgroupGenerator()),
-		n(ec_parameters.GetGroupOrder()), 
-		paillier(rng, 2*n.BitCount() + 3) {
+	S::S():
+		ec(common::ec_parameters().GetCurve()),
+		G(common::ec_parameters().GetSubgroupGenerator()),
+		n(common::ec_parameters().GetGroupOrder()), 
+		paillier(2*n.BitCount() + 3) {
 		// check that paillier has good bit length
 		if (paillier.get_n() <= 2*n*n*n*n){
 			cerr << "too short paillier" << endl;
@@ -44,7 +42,7 @@ namespace shared_signature {
 	}
 
 	void S::start_init(){
-		ds.Randomize(*rng, Integer::One(), n-1);
+		ds.Randomize(common::rng(), Integer::One(), n-1);
 		Qs = ec.Multiply(ds, G);
 	}
 
@@ -54,7 +52,7 @@ namespace shared_signature {
 	}
 
 	void S::start_sig(){
-		ks.Randomize(*rng, Integer::One(), n-1);
+		ks.Randomize(common::rng(), Integer::One(), n-1);
 		Ks = ec.Multiply(ks, G);
 		cs = paillier.enc(ds);
 	}
@@ -72,16 +70,12 @@ namespace shared_signature {
 	 * B
 	 **************************/
 
-	B::B(	AutoSeededRandomPool *rng,
-				DL_GroupParameters_EC<ECP> ec_parameters, 
-				Integer paillier_n, 
+	B::B(	Integer paillier_n, 
 				Integer paillier_g): 
-		rng(rng),
-		ec_parameters(ec_parameters),
-		ec(ec_parameters.GetCurve()),
-		G(ec_parameters.GetSubgroupGenerator()),
-		n(ec_parameters.GetGroupOrder()),
-		paillier(rng, paillier_n, paillier_g) {
+		ec(common::ec_parameters().GetCurve()),
+		G(common::ec_parameters().GetSubgroupGenerator()),
+		n(common::ec_parameters().GetGroupOrder()),
+		paillier(paillier_n, paillier_g) {
 
 			// TODO throw or exit
 			if (paillier.get_n() <= 2*n*n*n*n)
@@ -89,7 +83,7 @@ namespace shared_signature {
 		}
 
 	void B::start_init(){
-		db.Randomize(*rng, Integer::One(), n-1);
+		db.Randomize(common::rng(), Integer::One(), n-1);
 		Qb = ec.Multiply(db, G);
 	}
 
@@ -99,7 +93,7 @@ namespace shared_signature {
 	}
 
 	void B::cont_sig(ECPPoint Ks, Integer cs, byte *m, unsigned m_len){
-		kb.Randomize(*rng, Integer::One(), n-1);
+		kb.Randomize(common::rng(), Integer::One(), n-1);
 		K = ec.Multiply(kb, Ks);
 		r = K.x % n;
 		if (r == 0)
@@ -109,7 +103,7 @@ namespace shared_signature {
 		Integer c1 = paillier.enc( a_times_b_mod_c(kb.InverseMod(n), hi, n) );
 		Integer t = a_times_b_mod_c(a_times_b_mod_c(kb.InverseMod(n), r, n), db, n);
 		Integer c2 = a_times_b_mod_c(c1, a_exp_b_mod_c(cs, t, paillier.get_n2()), paillier.get_n2());
-		Integer u(*rng, Integer::Zero(), n*n - 1);
+		Integer u(common::rng(), Integer::Zero(), n*n - 1);
 		cb = a_times_b_mod_c(c2, paillier.enc(u*n), paillier.get_n2());
 	}
 

@@ -5,7 +5,7 @@ ALL=test_paillier test_shared_sig  ECDSA-Test-C ecdsa
 
 all: $(ALL)
 
-$(ALL): %: %.cpp paillier.o shared_sig.o
+$(ALL): %: %.cpp paillier.o shared_sig.o ../common/common.o
 	g++ $(FLAGS) -o $@ $^ -lcryptopp
 
 #ECDSA-Test-C: ECDSA-Test-C.cpp

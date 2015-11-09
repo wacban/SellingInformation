@@ -8,11 +8,14 @@
 
 namespace common {
 	
-extern std::vector<byte> enc(const std::array<byte, CryptoPP::AES::DEFAULT_KEYLENGTH>& key, std::vector<byte> msg);
+const unsigned AES_LENGTH = 32;
 
-extern std::vector<byte> dec(const std::array<byte, CryptoPP::AES::DEFAULT_KEYLENGTH>& key, std::vector<byte> msg);
+extern std::vector<byte> enc(const std::array<byte, AES_LENGTH>& key, const std::vector<byte>& msg);
+extern std::vector<byte> enc(const std::vector<byte>& key, const std::vector<byte>& msg);
+
+extern std::vector<byte> dec(const std::array<byte, AES_LENGTH>& key, const std::vector<byte>& msg);
+extern std::vector<byte> dec(const std::vector<byte>& key, const std::vector<byte>& msg);
 
 }
 
 #endif
-

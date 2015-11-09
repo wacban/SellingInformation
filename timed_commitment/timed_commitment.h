@@ -2,6 +2,7 @@
 #define _TIMED_COMMITMENT_H_
 
 #include "regular_commitment.h"
+#include "../common/common.h"
 
 #include <cryptopp/integer.h>
 #include <cryptopp/osrng.h>
@@ -55,8 +56,7 @@ namespace timed_commitment {
 		std::vector<CryptoPP::Integer> W; // < g**2, ..., g ** (2 ** ( 2 ** k ) ) > 
 		unsigned l;
 
-		Commitment(){
-		}
+		Commitment(){}
 
 		Commitment( unsigned K,
 				CryptoPP::Integer n, 
@@ -73,8 +73,6 @@ namespace timed_commitment {
 	class Commiter{
 		private:
 
-			CryptoPP::AutoSeededRandomPool *rng;
-
 			CryptoPP::Integer p;
 			CryptoPP::Integer q;
 			CryptoPP::Integer n;
@@ -89,9 +87,7 @@ namespace timed_commitment {
 
 		public:
 
-
-			Commiter(CryptoPP::AutoSeededRandomPool *rng): 
-				rng(rng){
+			Commiter() {
 					p = gen_prime(BITS);
 					q = gen_prime(BITS);
 					n = p*q;
@@ -116,7 +112,6 @@ namespace timed_commitment {
 	class Receiver {
 
 		private:
-			CryptoPP::AutoSeededRandomPool *rng;
 			Commitment com;
 
 			std::vector<CryptoPP::Integer> commit_values;
@@ -126,7 +121,7 @@ namespace timed_commitment {
 
 		public:
 
-			Receiver(CryptoPP::AutoSeededRandomPool *rng);
+			Receiver() {}
 			
 			void accept_commitment(const Commitment &com);
 

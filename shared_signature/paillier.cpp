@@ -1,4 +1,5 @@
 #include "paillier.h"
+#include "../common/common.h"
 #include <iostream>
 using std::cout;
 using std::cerr;
@@ -7,11 +8,9 @@ using std::endl;
 using CryptoPP::Integer;
 
 // each of the primes will have 'bits' bits, n will have 2*'bits' bits 
-Paillier::Paillier(CryptoPP::AutoSeededRandomPool *rng, unsigned bits) {
-  this->rng = rng;
-
-  p.Randomize(*rng, Integer::One()<<bits, Integer::One()<<(bits+1), Integer::PRIME);
-  q.Randomize(*rng, Integer::One()<<bits, Integer::One()<<(bits+1), Integer::PRIME);
+Paillier::Paillier(unsigned bits) {
+  p.Randomize(common::rng(), Integer::One()<<bits, Integer::One()<<(bits+1), Integer::PRIME);
+  q.Randomize(common::rng(), Integer::One()<<bits, Integer::One()<<(bits+1), Integer::PRIME);
 
   n = p * q;
   n2 = n * n;
@@ -21,8 +20,7 @@ Paillier::Paillier(CryptoPP::AutoSeededRandomPool *rng, unsigned bits) {
   u = phi.InverseMod(n);
 }
 
-Paillier::Paillier(CryptoPP::AutoSeededRandomPool *rng, CryptoPP::Integer n, CryptoPP::Integer g){
-  this->rng = rng;
+Paillier::Paillier(CryptoPP::Integer n, CryptoPP::Integer g){
   this->n = n;
   this->n2 = n*n;
   this->g = g;
@@ -65,7 +63,7 @@ Integer Paillier::enc(Integer m){
     throw PaillierException("m >= n || m < 0 ");
   }
   Integer r;
-	r.Randomize(*rng, Integer::One(), n);	// check divisibility by p, q ?
+	r.Randomize(common::rng(), Integer::One(), n);	// check divisibility by p, q ?
   return a_times_b_mod_c(a_exp_b_mod_c(g, m, n2), a_exp_b_mod_c(r, n, n2), n2);
 }
 

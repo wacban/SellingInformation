@@ -11,3 +11,5 @@
 - open - most checks should take place in subprotocols - verify it
 - why buyer samples from Zn/2 ?? why not Zn ? we can't even validate it ?
 - cut and choose verify that i is in good range [0, T)
+- some constant for AES key length
+- why not stop protocol when discovered that y is not quadratic residue

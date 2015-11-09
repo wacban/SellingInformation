@@ -1,0 +1,60 @@
+
+
+-------------------------------------------------------------------------------
+Jak uruchomić: 
+
+zainstalować cryptopp
+
+cd main
+make
+./main
+
+-------------------------------------------------------------------------------
+Co jest napisane w tej chwili:
+
+part 1 handshake
+part 2 generating signature and keys (w cut and choose)
+part 3 validating cut and choose (do sprawdzenia)
+part 4 częściowo
+
+brakuje part 5 i bitcoinowej części
+
+-------------------------------------------------------------------------------
+Organizacja kodu:
+
+Każdy podprotokół ma swój folder z implementacją, testami i zależnościami.
+W common jest parę stałych i funkcji przydatnych.
+W main jest main, i implementacja głównego protokołu.
+
+-------------------------------------------------------------------------------
+protocol.h i cut_and_choose
+
+Żeby korzystać z cut_and_choose trzeba napisać protokół w określony sposób.
+
+Jak zaimplementować protokół pod cut_and_choose:
+Trzeba zdefiniować dwie klasy np. A i B które będą brały udział w protokole.
+Następnie trzeba zdefiniować klasę protokołu np. P dziedziczącą po Protocol.
+Protocol ma 3 metody: init, exec i open o sygnaturze void (A*, B*).
+W tej chwili kilka protokołów implementuje Protocol np. sha_commitment,
+shared_signature.
+
+Żeby uruchomić cut_and_choose trzeba najpierw stworzyć vector<A> va i 
+vector<B> vb. Następnie trzeba stworzyć instancje Prover i Verifier i 
+przekazać va i vb. Po stronie weryfikatora trzeba wybrać indeks i.
+Potem należy wywołać cut_and_choose.
+
+-------------------------------------------------------------------------------
+main/signature_key
+
+Tutaj jest implementacja part 2 czyli generowanie podpisu i kluczy. To jest
+włożone do cut and choose.
+
+-------------------------------------------------------------------------------
+main/sell_information
+
+Główny protokół.
+
+-------------------------------------------------------------------------------
+Czas wykonania:
+main ok 6 sekund - większość stałych jest ustawiona na 10 w common/common.h
+

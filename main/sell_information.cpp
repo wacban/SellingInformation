@@ -1,9 +1,10 @@
-
 #include "sell_information.h"
 #include "../cut_and_choose/cut_and_choose.h"
 #include "../timed_commitment/bit_utils.h"
 #include "../timed_commitment/timed_commitment.h"
 #include "../sha_commitment/sha_commitment.h"
+#include "../common/aes.h"
+#include "../common/log.h"
 #include <vector>
 #include <iostream>
 
@@ -12,214 +13,87 @@ using namespace std;
 
 namespace sell_information {
 
-static array<common::TSHA256Digest, L> genKeys(const vector<byte>& signature) {
-	array<common::TSHA256Digest, L> keys;
-	for(unsigned i = 0; i < L; ++i) {
-		Integer I(i);
-		vector<byte> i_encoded(I.MinEncodedSize());
-		I.Encode(i_encoded.data(), i_encoded.size());
-
-		vector<byte> tmp = common::concatenate(signature, i_encoded);
-		common::sha256.CalculateDigest(keys[i].data(), tmp.data(), tmp.size());
-
-		// keys_commits[i].m.assign(keys[i].begin(), keys[i].end()); // TODO
-	}
-	// signature_commit.m = signature; TODO
-	return keys;
-}
-
-class SingleSeller {
-	AutoSeededRandomPool *rng;
-	DL_GroupParameters_EC<ECP> ec_parameters;
-
-	BitcoinTransaction T2;
-
-	array<common::TSHA256Digest, L> keys;
-
-	public:
-	shared_signature::S shared_signature_s;
-	timed_commitment::Commiter timed_commitment_commiter;
-
-	array<sha_commitment::Sender, L> keys_commits;
-	sha_commitment::Sender signature_commit;
-
-	SingleSeller(	CryptoPP::AutoSeededRandomPool *rng, 
-								CryptoPP::DL_GroupParameters_EC<CryptoPP::ECP> ec_parameters,
-								shared_signature::S shared_signature_s):
-			rng(rng), ec_parameters(ec_parameters), shared_signature_s(shared_signature_s), 
-			timed_commitment_commiter(rng), keys_commits() {}
-					
-	void setT2(BitcoinTransaction T2){
-		this->T2 = T2;
-	}
-	
-	void cheat(){
-		// for testing
-		throw ProtocolException("Cheating not implemented!");
-	}
-
-	AutoSeededRandomPool *getRng(){
-		return rng;
-	}
-
-	void genKeysAndSetupCommits(){
-		vector<byte> signature = shared_signature_s.get_signature();
-
-		keys = genKeys(signature);
-		for(unsigned i = 0; i < L; ++i) {
-			keys_commits[i].m.assign(keys[i].begin(), keys[i].end());
-		}
-		signature_commit.m = signature;
-	}
-};
-
-class SingleBuyer {
-	
-	AutoSeededRandomPool *rng;
-	DL_GroupParameters_EC<ECP> ec_parameters;
-
-	BitcoinTransaction T1;
-	BitcoinTransaction T2;
-
-	bool open_verified;
-
-	public:
-	shared_signature::B shared_signature_b;
-	timed_commitment::Receiver timed_commitment_receiver;
-
-	array<sha_commitment::Receiver, L> keys_commits;
-	sha_commitment::Receiver signature_commit;
-
-	SingleBuyer(AutoSeededRandomPool *rng, 
-							DL_GroupParameters_EC<ECP> ec_parameters,
-							shared_signature::B shared_signature_b):
-			rng(rng), ec_parameters(ec_parameters), open_verified(false), shared_signature_b(shared_signature_b), timed_commitment_receiver(rng) {}
-	
-	AutoSeededRandomPool* getRng(){
-		return rng;
-	}
-
-	void createT1(){
-		/* TODO */
-	}
-
-	void createT2(){
-		/* TODO */
-	}
-	
-	BitcoinTransaction getT2(){
-		return T2;
-	}
-
-	void setOpenVerified(bool open_verified){
-		this->open_verified = open_verified;
-	}
-
-	bool getOpenVerified() {
-		return open_verified;
-	}
-
-	void verifyKeys() {
-		vector<byte> signature = signature_commit.m;
-		array<common::TSHA256Digest, L> exp_keys = genKeys(signature);
-		for(unsigned i = 0; i < L; ++i){
-			if (!equal(keys_commits[i].m.begin(), keys_commits[i].m.end(), exp_keys[i].begin())) {
-				throw ProtocolException("Invalid key");
-			}
-		}
-	}
-};
-
-class SingleSellInformationProtocol : public Protocol<SingleSeller, SingleBuyer> {
-	public:
-	void init(SingleSeller *, SingleBuyer *);
-	void exec(SingleSeller *, SingleBuyer *);
-	void open(SingleSeller *, SingleBuyer *);
-};
-
-
-void SingleSellInformationProtocol::init(SingleSeller *, SingleBuyer *) {
-	
-}
-
-void SingleSellInformationProtocol::exec(SingleSeller *seller, SingleBuyer *buyer) {
-	shared_signature::SharedSignature shared_signature_protocol;
-
-	/* Generate shared secret key for ECDSA */
-	shared_signature_protocol.init(&seller->shared_signature_s, &buyer->shared_signature_b);
-
-	buyer->createT1();
-
-	buyer->createT2();
-
-	seller->setT2(buyer->getT2());	// TODO verify T2
-
-	auto T2_bytes = buyer->getT2().get_bytes();
-
-	/* Sign T2 */
-	buyer->shared_signature_b.set_data(T2_bytes.data(), T2_bytes.size());
-
-	shared_signature_protocol.exec(&seller->shared_signature_s, &buyer->shared_signature_b);
-
-	timed_commitment::commit(&seller->timed_commitment_commiter, &buyer->timed_commitment_receiver, K, BitUtils::integer_to_bits(seller->shared_signature_s.get_ds()));
-
-	seller->genKeysAndSetupCommits();
-
-	sha_commitment::ShaCommitment sha_commitment_protocol;
-	
-	for(unsigned i = 0; i < L; ++i) {
-		sha_commitment_protocol.init(&seller->keys_commits[i], &buyer->keys_commits[i]);
-		sha_commitment_protocol.exec(&seller->keys_commits[i], &buyer->keys_commits[i]);
-	}
-
-	sha_commitment_protocol.init(&seller->signature_commit, &buyer->signature_commit);
-	sha_commitment_protocol.exec(&seller->signature_commit, &buyer->signature_commit);
-}
-
-void SingleSellInformationProtocol::open(SingleSeller *single_seller, SingleBuyer *single_buyer) {
-	/* verify 
-	 * - init
-	 * - signing
-	 * TODO
-	 */
-
-	shared_signature::SharedSignature shared_signature_protocol;
-	shared_signature_protocol.open(&single_seller->shared_signature_s, &single_buyer->shared_signature_b);
-
-	timed_commitment::open_commitment(&single_seller->timed_commitment_commiter, &single_buyer->timed_commitment_receiver);
-
-	sha_commitment::ShaCommitment sha_commitment_protocol;
-
-	for(unsigned i = 0; i < L; ++i) {
-		sha_commitment_protocol.open(&single_seller->keys_commits[i], &single_buyer->keys_commits[i]);
-	}
-
-	sha_commitment_protocol.open(&single_seller->signature_commit, &single_buyer->signature_commit);
-
-	single_buyer->verifyKeys();
-
-	single_buyer->setOpenVerified(single_buyer->shared_signature_b.getOpenVerified());
-}
+using common::L;
+using common::T;
 
 void Seller::findRoots() {
-	for(unsigned i = 0; i < L; ++i){
+	for(unsigned i = 0; i < common::L; ++i){
 		array<Integer, 4> roots = square_root.all_square_roots(y[i]);
 		r1[i] = roots[0];
 		r2[i] = roots[1];
-		if (common::rng.GenerateBit() == 1) {
+		if (common::rng().GenerateBit() == 1) {
 			swap(r1[i], r2[i]);
+		}
+		if (r1[i] == -1) {
+			// TODO random
+		}
+		if (r2[i] == -1) {
+			// TODO random
 		}
 	}
 }
 
 void Seller::encryptRoots() {
 	for(unsigned i = 0; i < L; ++i) {
-		// c1[i] = common::enc( //TODO
+		c1[i] = common::enc(single_seller.keys_commits[i].m, common::to_bytes(r1[i]));
+		c2[i] = common::enc(single_seller.keys_commits[i].m, common::to_bytes(r2[i]));
 	}
 }
 
+void Seller::setupCommit() {
+	for(unsigned i = 0; i < L; ++i) {
+		d1[i].m = c1[i];
+		d2[i].m = c2[i];
+	}
+}
+
+array<unsigned, L/2> Seller::acceptSubset(const std::array<unsigned, common::L/2>& indices, 
+													const std::array<CryptoPP::Integer, common::L/2>& values) {
+	array<unsigned, L/2> commitment_indices;	// which of c1, c2 shoudl be opened ?
+
+	for(unsigned i = 0; i < L/2; ++i) {
+		unsigned ind = indices[i];
+		Integer val = values[i];
+		if (val >= n/2) {
+			throw ProtocolException("xi >= n/2");
+		}
+		if ((val*val) % n != y[ind]) {
+			throw ProtocolException("xi is not a square root of yi");
+		}
+		commitment_indices[i] = 5; // TODO
+		if (val == r1[ind]) {
+			commitment_indices[i] = 1;
+		}
+		if (val == r2[ind]) {
+			commitment_indices[i] = 2;
+		}
+	}
+	return commitment_indices;
+}
+
 void Buyer::pickR(){
-	this->r = Integer(common::rng, 0, T-1).ConvertToLong();
+	this->r = Integer(common::rng(), 0, T-1).ConvertToLong();
+}
+
+void Buyer::pickSubset() {
+	indices.resize(L);
+	std::iota(indices.begin(), indices.end(), 0);
+	common::rng().Shuffle(indices.begin(), indices.end());	
+	indices.resize(L/2);
+}
+
+array<unsigned, L/2> Buyer::getSubsetIndices() {
+	array<unsigned, L/2> res;
+	copy(indices.begin(), indices.end(), res.begin());
+	return res;
+}
+
+array<Integer, L/2> Buyer::getSubsetValues() {
+	array<Integer, L/2> res;
+	for(unsigned i = 0; i < L/2; ++i) {
+		res[i] = x[indices[i]];
+	}
+	return res;
 }
 
 void SellInformationProtocol::init(Seller *seller, Buyer *buyer) {
@@ -241,24 +115,17 @@ void SellInformationProtocol::init(Seller *seller, Buyer *buyer) {
 }
 
 void SellInformationProtocol::exec(Seller *seller, Buyer *buyer){
-	
+	Log("sell information protocol exec");
 	SingleSellInformationProtocol single_sell_information;
 
-	shared_signature::S shared_signature_s(seller->getRng(), seller->getEcParameters());
+	shared_signature::S shared_signature_s;
 	shared_signature::B shared_signature_b(
-		buyer->getRng(), 
-		buyer->getEcParameters(),
 		shared_signature_s.get_paillier_n(),
-		shared_signature_s.get_paillier_g());
+		shared_signature_s.get_paillier_g()
+	);
 
-	SingleSeller single_seller(
-		seller->getRng(),
-		seller->getEcParameters(),
-		shared_signature_s);
-	SingleBuyer single_buyer(
-		buyer->getRng(),
-		buyer->getEcParameters(),
-		shared_signature_b);
+	SingleSeller single_seller(shared_signature_s);
+	SingleBuyer single_buyer(shared_signature_b);
 
 	vector<SingleSeller> single_sellers(T, single_seller);
 	vector<SingleBuyer> single_buyers(T, single_buyer);
@@ -281,13 +148,47 @@ void SellInformationProtocol::exec(Seller *seller, Buyer *buyer){
 		throw ProtocolException("Generating signatures and keys failed!");
 	}
 
-	// seller->setSingleSeller(prover.v[verifier.i]);
-	// buyer->setSingleBuyer(verifier.v[verifier.i]);
+	Log("finished cut and choose");
+
+	seller->setSingleSeller(prover.v[verifier.i]);
+	buyer->setSingleBuyer(verifier.v[verifier.i]);
 
 	buyer->genSquares();
 	seller->acceptSquares(buyer->getSquares());
 	seller->findRoots();
 	seller->encryptRoots();
+	seller->setupCommit();
+
+	sha_commitment::ShaCommitment sha_commitment_protocol;
+
+	for(unsigned i = 0; i < L; ++i) {
+		sha_commitment_protocol.init(&seller->d1[i], &buyer->d1[i]);
+		sha_commitment_protocol.init(&seller->d2[i], &buyer->d2[i]);
+
+		sha_commitment_protocol.exec(&seller->d1[i], &buyer->d1[i]);
+		sha_commitment_protocol.exec(&seller->d2[i], &buyer->d2[i]);
+	}
+	
+	buyer->pickSubset();
+	auto indices = buyer->getSubsetIndices();
+	auto values = buyer->getSubsetValues();
+
+	auto commitment_indices = seller->acceptSubset(indices, values);
+	for(unsigned i = 0; i < L/2; ++i) {
+		unsigned ind = indices[i];
+		Integer val = values[i];
+		unsigned commit_ind = commitment_indices[i];
+		switch (commit_ind) {
+			case 1:
+				sha_commitment_protocol.open(&seller->d1[ind], &buyer->d1[ind]);
+				break;
+			case 2:
+				sha_commitment_protocol.open(&seller->d2[ind], &buyer->d2[ind]);
+				break;
+			default:
+				throw ProtocolException("matching roots to values didn't work");
+		}
+	}
 }
 
 void SellInformationProtocol::open(Seller *seller, Buyer *buyer){
