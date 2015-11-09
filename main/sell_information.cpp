@@ -6,6 +6,7 @@
 #include "../common/aes.h"
 #include "../common/log.h"
 #include <vector>
+#include <set>
 #include <iostream>
 #include <numeric>
 
@@ -97,6 +98,14 @@ array<Integer, L/2> Buyer::getSubsetValues() {
 	return res;
 }
 
+void Buyer::verifyRoot(unsigned ind, const vector<byte>& key, const vector<byte>& c) {
+		vector<byte> x_encoded = common::dec(key, c);
+		Integer x(x_encoded.data(), x_encoded.size());
+		if (x != this->x[ind]) {
+			throw ProtocolException("verifyRoot failed");
+		}
+}
+
 void SellInformationProtocol::init(Seller *seller, Buyer *buyer) {
 	if (seller->get_n() != buyer->get_n()){
 		throw ProtocolException("Not matching n");
@@ -174,20 +183,46 @@ void SellInformationProtocol::exec(Seller *seller, Buyer *buyer){
 	auto indices = buyer->getSubsetIndices();
 	auto values = buyer->getSubsetValues();
 
+	set<unsigned> indices_set(indices.begin(), indices.end());
+	if (indices_set.size() != L/2) {
+		Log(indices);
+		throw ProtocolException("invalid indices size");
+	}
+
+	for(unsigned ind: indices_set) {
+		if (ind >= L) {
+			throw ProtocolException("invalid commitment_indices value");
+		}
+	}
+
 	auto commitment_indices = seller->acceptSubset(indices, values);
+
 	for(unsigned i = 0; i < L/2; ++i) {
 		unsigned ind = indices[i];
 		Integer val = values[i];
 		unsigned commit_ind = commitment_indices[i];
+		sha_commitment_protocol.open(&seller->single_seller.keys_commits[ind], &buyer->single_buyer.keys_commits[ind]);
+		vector<byte> key = buyer->single_buyer.keys_commits[ind].m;
+		vector<byte> c;
 		switch (commit_ind) {
 			case 1:
 				sha_commitment_protocol.open(&seller->d1[ind], &buyer->d1[ind]);
+				c = buyer->d1[ind].m;
 				break;
 			case 2:
 				sha_commitment_protocol.open(&seller->d2[ind], &buyer->d2[ind]);
+				c = buyer->d2[ind].m;
 				break;
 			default:
 				throw ProtocolException("matching roots to values didn't work");
+		}
+		buyer->verifyRoot(ind, key, c);
+	}
+
+	for(unsigned ind = 0; ind < L; ++ind){
+		if (indices_set.find(ind) == indices_set.end()) {
+			sha_commitment_protocol.open(&seller->d1[ind], &buyer->d1[ind]);
+			sha_commitment_protocol.open(&seller->d2[ind], &buyer->d2[ind]);
 		}
 	}
 }

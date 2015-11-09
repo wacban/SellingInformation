@@ -34,9 +34,9 @@ class Seller {
 	std::array<std::vector<byte>, common::L> c1;
 	std::array<std::vector<byte>, common::L> c2;
 
-	SingleSeller single_seller;
-
 	public:
+
+	SingleSeller single_seller;
 
 	std::array<sha_commitment::Sender, common::L> d1;
 	std::array<sha_commitment::Sender, common::L> d2;
@@ -90,11 +90,11 @@ class Buyer {
 
 	int r;
 
-	SingleBuyer single_buyer;
-
 	std::vector<unsigned> indices;
 
 	public:
+	SingleBuyer single_buyer;
+
 	std::array<sha_commitment::Receiver, common::L> d1;
 	std::array<sha_commitment::Receiver, common::L> d2;
 
@@ -139,6 +139,8 @@ class Buyer {
 	void pickSubset();
 	std::array<unsigned, common::L/2> getSubsetIndices();
 	std::array<CryptoPP::Integer, common::L/2> getSubsetValues();
+
+	void verifyRoot(unsigned ind, const std::vector<byte>& key, const std::vector<byte>& c);
 };
 
 class SellInformationProtocol : public Protocol<Seller, Buyer> {
