@@ -9,7 +9,7 @@ using common::K;
 
 namespace sell_information {
 
-static array<common::TSHA256Digest, L> genKeys(const vector<byte>& signature) {
+array<common::TSHA256Digest, L> genKeys(const vector<byte>& signature) {
 	array<common::TSHA256Digest, L> keys;
 	for(unsigned i = 0; i < L; ++i) {
 		Integer I(i);

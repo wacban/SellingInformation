@@ -7,6 +7,8 @@
 #include <cryptopp/oids.h>
 #include <cryptopp/eccrypto.h>
 
+#include <iostream>
+
 using sell_information::Seller;
 using sell_information::Buyer;
 using sell_information::SellInformationProtocol;
@@ -29,6 +31,8 @@ int main(){
 
 	sell_information.init(&seller, &buyer);
 	sell_information.exec(&seller, &buyer);
+
+	cout << buyer.p << "\t" << buyer.q << endl;
 
 	return 0;
 }

@@ -13,6 +13,9 @@
 
 namespace sell_information {
 
+
+std::array<common::TSHA256Digest, common::L> genKeys(const std::vector<byte>& signature);
+
 class SingleSeller {
 	BitcoinTransaction T2;
 
@@ -30,6 +33,10 @@ class SingleSeller {
 	SingleSeller(shared_signature::S shared_signature_s):
 			shared_signature_s(shared_signature_s), timed_commitment_commiter(), keys_commits() {}
 	
+	BitcoinTransaction get_T2(){
+		return T2;
+	}
+
 	void setT2(BitcoinTransaction T2){
 		this->T2 = T2;
 	}
@@ -69,6 +76,10 @@ class SingleBuyer {
 		/* TODO */
 	}
 	
+	BitcoinTransaction getT1(){
+		return T1;
+	}
+
 	BitcoinTransaction getT2(){
 		return T2;
 	}

@@ -73,6 +73,17 @@ array<unsigned, L/2> Seller::acceptSubset(const std::array<unsigned, common::L/2
 	return commitment_indices;
 }
 
+void Seller::accept_T1(const BitcoinTransaction& T1) {
+	this->T1 = T1;
+	// TODO verify that T2 spends money from T1
+	// TODO verify hash
+	// TODO wait for T1 to be final 
+}
+
+void Seller::accept_payment() {
+	broadcast(this->single_seller.get_T2());
+}
+
 void Buyer::pickR(){
 	this->r = Integer(common::rng(), 0, T-1).ConvertToLong();
 }
@@ -104,6 +115,48 @@ void Buyer::verifyRoot(unsigned ind, const vector<byte>& key, const vector<byte>
 		if (x != this->x[ind]) {
 			throw ProtocolException("verifyRoot failed");
 		}
+}
+
+void Buyer::make_payment() {
+	broadcast(single_buyer.getT1());
+}
+
+void Buyer::start_brute_force() {
+	
+}
+
+void Buyer::read_signature() {
+	// TODO read the signature from bitcoin network
+}
+
+void Buyer::read_signature(const vector<byte>& signature) {
+	setSignature(signature);
+}
+
+void Buyer::factorise() {
+	auto keys = genKeys(signature);
+	// TODO negate signature
+	for(unsigned i = 0; i < L; ++i) {
+		if (d1[i].m.empty() || d2[i].m.empty())
+			continue;
+
+		auto r1_bytes = common::dec(keys[i], d1[i].m);
+		auto r2_bytes = common::dec(keys[i], d2[i].m);
+		Integer r1(r1_bytes.data(), r1_bytes.size());
+		Integer r2(r2_bytes.data(), r2_bytes.size());
+		if (r1 < 0)
+			r1 = -r1;
+		if (r2 < 0)
+			r2 = -r2;
+		Integer p = GCD(n + r1 - r2, n);
+		Integer q = GCD(r1 + r2, n);;
+		if (p * q == n) {
+			this->p = p;
+			this->q = q;
+			return;
+		}
+	}
+	throw ProtocolException("Factorization failed!");
 }
 
 void SellInformationProtocol::init(Seller *seller, Buyer *buyer) {
@@ -225,6 +278,18 @@ void SellInformationProtocol::exec(Seller *seller, Buyer *buyer){
 			sha_commitment_protocol.open(&seller->d2[ind], &buyer->d2[ind]);
 		}
 	}
+
+	buyer->make_payment();
+	buyer->start_brute_force();
+
+	seller->accept_T1(buyer->single_buyer.getT1());
+
+	seller->accept_payment();
+
+	buyer->read_signature(seller->single_seller.shared_signature_s.get_signature());
+	// buyer->read_signature();
+
+	buyer->factorise();
 }
 
 void SellInformationProtocol::open(Seller *seller, Buyer *buyer){

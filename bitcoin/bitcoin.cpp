@@ -1,7 +1,9 @@
 #include "bitcoin.h"
 
-bool verify(BitcoinAddress address) {
+bool verify(const BitcoinAddress& address) {
 	return true;
 }
 
+void broadcast(const BitcoinTransaction& transaction) {
+}
 

@@ -34,6 +34,7 @@ class Seller {
 	std::array<std::vector<byte>, common::L> c1;
 	std::array<std::vector<byte>, common::L> c2;
 
+	BitcoinTransaction T1;
 	public:
 
 	SingleSeller single_seller;
@@ -76,6 +77,9 @@ class Seller {
 	std::array<unsigned, common::L/2> acceptSubset(
 		const std::array<unsigned, common::L/2>& indices, 
 		const std::array<CryptoPP::Integer, common::L/2>& values);
+
+	void accept_T1(const BitcoinTransaction& T1);
+	void accept_payment();
 };
 
 class Buyer {
@@ -92,7 +96,13 @@ class Buyer {
 
 	std::vector<unsigned> indices;
 
+	std::vector<byte> signature;
+
 	public:
+	// results
+	CryptoPP::Integer p;
+	CryptoPP::Integer q;
+
 	SingleBuyer single_buyer;
 
 	std::array<sha_commitment::Receiver, common::L> d1;
@@ -113,6 +123,14 @@ class Buyer {
 
 	BitcoinAddress get_address(){
 		return bitcoin_address;
+	}
+
+	std::vector<byte> getSignature() {
+		return signature;
+	}
+
+	void setSignature(const std::vector<byte>& signature) {
+		this->signature = signature;
 	}
 
 	void pickR();
@@ -141,6 +159,12 @@ class Buyer {
 	std::array<CryptoPP::Integer, common::L/2> getSubsetValues();
 
 	void verifyRoot(unsigned ind, const std::vector<byte>& key, const std::vector<byte>& c);
+
+	void make_payment();
+	void start_brute_force();
+	void read_signature();
+	void read_signature(const std::vector<byte>&); 	// stub
+	void factorise();
 };
 
 class SellInformationProtocol : public Protocol<Seller, Buyer> {
