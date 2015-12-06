@@ -9,6 +9,8 @@
 #include <set>
 #include <iostream>
 #include <numeric>
+#include <thread>
+#include <unistd.h>
 
 using namespace CryptoPP;
 using namespace std;
@@ -121,16 +123,46 @@ void Buyer::make_payment() {
 	broadcast(single_buyer.getT1());
 }
 
-void Buyer::start_brute_force() {
+void Buyer::solve_time_lock(atomic_bool &finished) {
+	this->single_buyer.timed_commitment_receiver.force_open_smart();
+	finished = true;	
+}
+
+void Buyer::get_signature(atomic_bool &finished) {
+	if (common::rng().GenerateBit() == 1) {
+		Log("get singature sleeping");
+		while(true) {
+			sleep(1);
+		}
+	}
+	Log("get signature not sleeping");
 	
+	factorise();
+	finished = true;
 }
 
-void Buyer::read_signature() {
-	// TODO read the signature from bitcoin network
-}
+void Buyer::wait_for_signature_or_time_lock() {
+	atomic_bool signature_finished(false);
+	atomic_bool time_lock_finished(false);
 
-void Buyer::read_signature(const vector<byte>& signature) {
-	setSignature(signature);
+	thread solve_time_lock(&Buyer::solve_time_lock, this, ref(time_lock_finished));
+	thread get_signature(&Buyer::get_signature, this, ref(signature_finished));
+	
+	Log("wait_for_signature_or_time_lock waiting");
+	while(!signature_finished && !time_lock_finished) {
+		sleep(1);
+	}
+	Log("wait_for_signature_or_time_lock finished");
+
+	if (signature_finished) {
+		get_signature.join();
+		solve_time_lock.detach();
+		Log("signature finished");
+	} else {
+		Log("time lock finished");
+		get_signature.detach();
+		solve_time_lock.join();
+	}
 }
 
 void Buyer::factorise() {
@@ -280,16 +312,13 @@ void SellInformationProtocol::exec(Seller *seller, Buyer *buyer){
 	}
 
 	buyer->make_payment();
-	buyer->start_brute_force();
 
 	seller->accept_T1(buyer->single_buyer.getT1());
 
-	seller->accept_payment();
-
-	buyer->read_signature(seller->single_seller.shared_signature_s.get_signature());
-	// buyer->read_signature();
-
-	buyer->factorise();
+	seller->accept_payment();	 // last function for seller
+ 
+ 	buyer->set_signature(seller->single_seller.shared_signature_s.get_signature()); // for testing TODO remove
+	buyer->wait_for_signature_or_time_lock(); // last function for buyer
 }
 
 void SellInformationProtocol::open(Seller *seller, Buyer *buyer){

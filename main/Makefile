@@ -1,5 +1,5 @@
 
-FLAGS=-std=c++11 -Wall -Wextra -Wno-unused
+FLAGS=-pthread -std=c++11 -Wall -Wextra -Wno-unused
 
 ALL=main
 

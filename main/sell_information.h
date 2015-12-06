@@ -13,6 +13,8 @@
 #include <cryptopp/integer.h>
 #include <cryptopp/osrng.h>
 
+#include <atomic>
+
 namespace sell_information {
 
 class Seller {
@@ -160,11 +162,15 @@ class Buyer {
 
 	void verifyRoot(unsigned ind, const std::vector<byte>& key, const std::vector<byte>& c);
 
-	void make_payment();
-	void start_brute_force();
-	void read_signature();
-	void read_signature(const std::vector<byte>&); 	// stub
 	void factorise();
+	void make_payment();
+	void wait_for_signature_or_time_lock();
+	void solve_time_lock(std::atomic_bool &finished);
+	void get_signature(std::atomic_bool &finished);
+
+	void set_signature(const std::vector<byte>& signature) {  // for testing
+		this->signature = signature;	
+	}
 };
 
 class SellInformationProtocol : public Protocol<Seller, Buyer> {

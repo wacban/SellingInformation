@@ -14,7 +14,7 @@
 namespace common {
 
 const unsigned T = 10;
-const unsigned K = 10;	// TODO
+const unsigned K = 23;	// TODO
 const unsigned L = 10;	// TODO
 
 extern CryptoPP::AutoSeededRandomPool& rng();
