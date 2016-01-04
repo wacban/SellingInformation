@@ -3,7 +3,6 @@
 #include "../sha_commitment/sha_commitment.h"
 #include "cut_and_choose.h"
 
-#include <cryptopp/osrng.h>
 #include <vector>
 #include <iostream>
 
@@ -13,15 +12,9 @@ const int T = 10;
 
 int main(){
 
-	CryptoPP::AutoSeededRandomPool rng;
-
 	for(int i = -1; i < 10; ++i){
-
-		sha_commitment::Sender sender(&rng);
-		sha_commitment::Receiver receiver(&rng);
-
-		vector<sha_commitment::Sender> senders(T, sender);
-		vector<sha_commitment::Receiver> receivers(T, receiver);
+		vector<sha_commitment::Sender> senders(T);
+		vector<sha_commitment::Receiver> receivers(T);
 		cut_and_choose::Prover<sha_commitment::Sender> prover;
 		prover.v = senders;
 		cut_and_choose::Verifier<sha_commitment::Receiver> verifier;
@@ -34,7 +27,6 @@ int main(){
 			T > (&prover, &verifier, i);
 
 		cout << verifier.res << endl;
-
 	}
 
 	return 0;

@@ -1,4 +1,4 @@
-<project name="bitcoin_utils" default="test" basedir=".">
+<project name="bitcoin_utils" default="compile" basedir=".">
 
   <description>Thrift Java</description>
 
@@ -14,6 +14,9 @@
     <fileset dir="/home/wac/thrift-0.9.3/lib/java/build/lib">
       <include name="*.jar" />
     </fileset>
+    <fileset dir="lib">
+      <include name="*.jar" />
+    </fileset>
   </path>
   <path id="build.classpath">
     <path refid="libs.classpath" />
@@ -23,6 +26,7 @@
     <path refid="build.classpath" />
     <pathelement path="${build}" />
     <pathelement path="bitcoin_utils.jar" />
+    <pathelement path="log4j.properties" />
   </path>
   
   <target name="init">
@@ -42,8 +46,6 @@
     <javac includeantruntime="false" srcdir="${gen}" destdir="${build}" classpathref="libs.classpath" />
     <javac includeantruntime="false" srcdir="${src}" destdir="${build}" classpathref="build.classpath" />
   </target>
-
-  <target name="test" depends="compile" />
 
   <!--
   <target name="tutorial" description="Run the tutorial" depends="compile">
@@ -72,8 +74,24 @@
     </java>
   </target>
 
-  <target name="server" description="Run server" depends="compile">
+  <target name="seller" description="Run server for seller" depends="compile">
       <java classname="JavaServer" fork="true"
+        classpathref="bitcoin_utils.classpath" failonerror="false">
+        <arg value="seller"/>
+        <arg value="9091"/>
+      </java>
+  </target>
+
+  <target name="buyer" description="Run server for buyer" depends="compile">
+      <java classname="JavaServer" fork="true"
+        classpathref="bitcoin_utils.classpath" failonerror="false">
+        <arg value="buyer"/>
+        <arg value="9092"/>
+      </java>
+  </target>
+
+  <target name="test" description="Test" depends="compile">
+      <java classname="Test" fork="true"
         classpathref="bitcoin_utils.classpath" failonerror="false">
       </java>
   </target>

@@ -4,7 +4,6 @@
 #include "signature_key.h"
 
 #include "../shared_signature/shared_sig.h"
-#include "../bitcoin/bitcoin.h"
 #include "../common/common.h"
 #include "../common/aes.h"
 #include "../protocol.h"
@@ -25,8 +24,6 @@ class Seller {
 
 	unsigned price;
 
-	BitcoinAddress bitcoin_address;
-
 	common::SquareRoot square_root;
 
 	std::array<CryptoPP::Integer, common::L> y;
@@ -36,7 +33,7 @@ class Seller {
 	std::array<std::vector<byte>, common::L> c1;
 	std::array<std::vector<byte>, common::L> c2;
 
-	BitcoinTransaction T1;
+	Transaction T1;
 	public:
 
 	SingleSeller single_seller;
@@ -46,9 +43,8 @@ class Seller {
 
 	Seller(CryptoPP::Integer p, 
 				CryptoPP::Integer q, 
-				unsigned price, 
-				BitcoinAddress bitcoin_address):
-		p(p), q(q), n(p*q), price(price), bitcoin_address(bitcoin_address), square_root(p, q) {}
+				unsigned price):
+		p(p), q(q), n(p*q), price(price), square_root(p, q) {}
 
 	CryptoPP::Integer get_n(){
 		return p*q;
@@ -58,10 +54,6 @@ class Seller {
 		return price;
 	}
 	
-	BitcoinAddress get_address(){
-		return bitcoin_address;
-	}
-
 	void acceptSquares(const std::array<CryptoPP::Integer, common::L>& y){
 		this->y = y;
 	}
@@ -80,7 +72,7 @@ class Seller {
 		const std::array<unsigned, common::L/2>& indices, 
 		const std::array<CryptoPP::Integer, common::L/2>& values);
 
-	void accept_T1(const BitcoinTransaction& T1);
+	void accept_T1(const Transaction& T1);
 	void accept_payment();
 };
 
@@ -88,8 +80,6 @@ class Buyer {
 	CryptoPP::Integer n;	// The rsa modulus - would like to buy primes p, q: p*q = n
 
 	unsigned price;
-
-	BitcoinAddress bitcoin_address;
 
 	std::array<CryptoPP::Integer, common::L> x;
 	std::array<CryptoPP::Integer, common::L> y;
@@ -111,9 +101,8 @@ class Buyer {
 	std::array<sha_commitment::Receiver, common::L> d2;
 
 	Buyer(CryptoPP::Integer n, 
-				unsigned price,
-				BitcoinAddress bitcoin_address):
-		n(n), price(price), bitcoin_address(bitcoin_address) {}
+				unsigned price):
+		n(n), price(price) {}
 
 	CryptoPP::Integer get_n(){
 		return n;
@@ -123,15 +112,11 @@ class Buyer {
 		return price;
 	}
 
-	BitcoinAddress get_address(){
-		return bitcoin_address;
-	}
-
 	std::vector<byte> getSignature() {
 		return signature;
 	}
 
-	void setSignature(const std::vector<byte>& signature) {
+	void setSignature(std::vector<byte> signature) {
 		this->signature = signature;
 	}
 

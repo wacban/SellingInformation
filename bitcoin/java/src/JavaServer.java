@@ -16,13 +16,21 @@ public class JavaServer {
   public static BitcoinUtils.Processor processor;
 
   public static void main(String [] args) {
+    if (args.length != 2) {
+      System.out.println("Expected  arguments app name and port");
+      return;
+    }
+    
+    String app_name = args[0];
+    Integer port = new Integer(args[1]);
+
     try {
-      handler = new BitcoinUtilsHandler();
+      handler = new BitcoinUtilsHandler(app_name);
       processor = new BitcoinUtils.Processor(handler);
 
       Runnable simple = new Runnable() {
         public void run() {
-          simple(processor);
+          simple(processor, port);
         }
       };      
 
@@ -32,9 +40,9 @@ public class JavaServer {
     }
   }
 
-  public static void simple(BitcoinUtils.Processor processor) {
+  public static void simple(BitcoinUtils.Processor processor, Integer port) {
     try {
-      TServerTransport serverTransport = new TServerSocket(9090);
+      TServerTransport serverTransport = new TServerSocket(port);
       TServer server = new TSimpleServer(new Args(serverTransport).processor(processor));
 
       System.out.println("Starting the simple server...");

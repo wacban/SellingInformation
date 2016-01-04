@@ -75,15 +75,46 @@ array<unsigned, L/2> Seller::acceptSubset(const std::array<unsigned, common::L/2
 	return commitment_indices;
 }
 
-void Seller::accept_T1(const BitcoinTransaction& T1) {
+void Seller::accept_T1(const Transaction& T1) {
 	this->T1 = T1;
-	// TODO verify that T2 spends money from T1
-	// TODO verify hash
-	// TODO wait for T1 to be final 
+
+  bool res = single_seller.base_party.client.verifyTransaction(
+    T1,
+    common::integer2string(single_seller.shared_signature_s.get_Q().x),
+    common::integer2string(single_seller.shared_signature_s.get_Q().y),
+    price
+  );
+
+  if (!res) {
+    throw ProtocolException("verify T1 failed!");
+  } else {
+    Log("verify transaction worked!");
+  }
+
+  
+  /* TODO verify T2 */
+
+  res = single_seller.base_party.client.waitForTransaction(T1, 1); // TODO better security
+  if (!res) {
+    throw ProtocolException("wait for t1 failed!");
+  } else {
+    Log("wait for t1 worked!");
+  }
 }
 
 void Seller::accept_payment() {
-	broadcast(this->single_seller.get_T2());
+  bool res = single_seller.base_party.client.broadcastTransaction(
+    single_seller.getT2()
+  );
+   
+  if (!res) {
+    throw ProtocolException("accept payment failed!");
+  } else {
+    Log("accept payment worked!");
+  }
+
+	// broadcast(this->single_seller.get_T2());
+  // TODO
 }
 
 void Buyer::pickR(){
@@ -120,22 +151,54 @@ void Buyer::verifyRoot(unsigned ind, const vector<byte>& key, const vector<byte>
 }
 
 void Buyer::make_payment() {
-	broadcast(single_buyer.getT1());
+  bool res = single_buyer.base_party.client.broadcastTransaction(
+    single_buyer.getT1()
+  );
+  if (!res) {
+    throw ProtocolException("make payment failed");
+  } else {
+    Log("payment succesfull");
+  }
 }
 
 void Buyer::solve_time_lock(atomic_bool &finished) {
+  Log("solve time lock sleeping forever");
+	while(true) {
+	  sleep(1);
+	}
+	
 	this->single_buyer.timed_commitment_receiver.force_open_smart();
 	finished = true;	
 }
 
 void Buyer::get_signature(atomic_bool &finished) {
-	if (common::rng().GenerateBit() == 1) {
+	/*if (common::rng().GenerateBit() == 1) {
 		Log("get singature sleeping");
 		while(true) {
 			sleep(1);
 		}
 	}
+  */
+  bool res;
 	Log("get signature not sleeping");
+  res = single_buyer.base_party.client.waitForTransactionByOutput(single_buyer.getSellerAddress(), 1); // TODO better security
+  if (!res) {
+    throw ProtocolException("wait for transaction by output failed");
+  }
+
+  bitcoin_utils::IntegerPair signature;
+  single_buyer.base_party.client.getSignature(signature, single_buyer.getSellerAddress());
+
+  Integer r = Integer((byte*) signature.r.data(), signature.r.size());
+  Integer s = Integer((byte*) signature.s.data(), signature.s.size());
+  this->signature = shared_signature::encode_signature(r, s);
+  Log("-------------------------------------------");
+  Log("Signature from btc");
+  Log(common::string2hex(common::v2string(this->signature)));
+  Log("-- r s");
+  Log(r);
+  Log(s);
+  Log("-------------------------------------------");
 	
 	factorise();
 	finished = true;
@@ -166,8 +229,9 @@ void Buyer::wait_for_signature_or_time_lock() {
 }
 
 void Buyer::factorise() {
-	auto keys = genKeys(signature);
-	// TODO negate signature
+  vector<byte> sig(signature.begin(), signature.end());
+	auto keys = genKeys(sig);
+	// TODO negate signature 
 	for(unsigned i = 0; i < L; ++i) {
 		if (d1[i].m.empty() || d2[i].m.empty())
 			continue;
@@ -200,13 +264,17 @@ void SellInformationProtocol::init(Seller *seller, Buyer *buyer) {
 		throw ProtocolException("Not matching price");
 	}
 
-	if (!verify(seller->get_address())){
+	/*
+  if (!verify(seller->get_address())){
 		throw ProtocolException("Seller has invalid bitcoin address");
 	}
+  */
 
+  /*
 	if (!verify(buyer->get_address())){
 		throw ProtocolException("Buyer has invalid bitcoin address");
 	}
+  */
 }
 
 void SellInformationProtocol::exec(Seller *seller, Buyer *buyer){
@@ -240,13 +308,27 @@ void SellInformationProtocol::exec(Seller *seller, Buyer *buyer){
 		T > (&prover, &verifier);
 
 	if (!verifier.res) {
+    // TODO 
 		throw ProtocolException("Generating signatures and keys failed!");
 	}
 
 	Log("finished cut and choose");
 
 	seller->setSingleSeller(prover.v[verifier.i]);
-	buyer->setSingleBuyer(verifier.v[verifier.i]);
+  Log("-------------------------------------------");
+  Log("Generated signature:");
+  Log(
+    common::string2hex(
+      common::v2string(
+        seller->single_seller.shared_signature_s.get_signature()
+      )
+    )
+  );
+  Log(seller->single_seller.shared_signature_s.get_r());
+  Log(seller->single_seller.shared_signature_s.get_s());
+  Log("-------------------------------------------");
+
+  buyer->setSingleBuyer(verifier.v[verifier.i]);
 
 	buyer->genSquares();
 	seller->acceptSquares(buyer->getSquares());
@@ -317,7 +399,7 @@ void SellInformationProtocol::exec(Seller *seller, Buyer *buyer){
 
 	seller->accept_payment();	 // last function for seller
  
- 	buyer->set_signature(seller->single_seller.shared_signature_s.get_signature()); // for testing TODO remove
+ 	// buyer->set_signature(seller->single_seller.shared_signature_s.get_signature()); // for testing TODO remove
 	buyer->wait_for_signature_or_time_lock(); // last function for buyer
 }
 

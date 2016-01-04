@@ -1,16 +1,106 @@
 namespace cpp bitcoin_utils
 namespace java bitcoin_utils
 
+typedef binary Address
+typedef binary Transaction
+typedef binary IntegerBytes
+typedef binary Signature
+typedef binary Script
+typedef binary Hash
+
+struct IntegerPair {
+  1: required IntegerBytes r;
+  2: required IntegerBytes s;
+}
+
 service BitcoinUtils { 
-
    void ping(),
+   
+   /**
+    * Returns a fresh address for the wallet.
+    */
+   Address freshAddress(),
 
-   /*
-   i32 add(1:i32 num1, 2:i32 num2),
+   /**
+    * Creates transaction that sends value satoshis to 
+    * address x, y.
+    */
+   Transaction createSend(1:IntegerBytes x, 2:IntegerBytes y, 3:i32 value),
+   
+   /**
+    * Creates transaction that spends P2PKH output of transaction tx.
+    * The output is for public key x, y. Output of this transaction is
+    * to address dst.
+    */
+   Transaction createSendTransactionToAddress(
+     1:Transaction tx, 
+     2:IntegerBytes x, 
+     3:IntegerBytes y, 
+     4:Address dst
+   ),
 
-   i32 calculate(1:i32 logid, 2:Work w) throws (1:InvalidOperation ouch),
+   Script getOutputScript(
+     1:Transaction tx,
+     2:IntegerBytes x, 
+     3:IntegerBytes y,
+   ),
 
-   oneway void zip()
-   */
+   Hash hashForSignature(
+     1:Transaction tx
+     2:IntegerBytes x, 
+     3:IntegerBytes y,
+     4:Script redeem_script
+   ),
 
+   Transaction getSignedTransaction(
+     1:Transaction tx, 
+     2:IntegerBytes x, 
+     3:IntegerBytes y,
+     4:IntegerBytes r,
+     5:IntegerBytes s,
+     6:Script redeem_script
+   ),
+/*
+   bool verifySignature(
+     1:Transaction tx, 
+     2:IntegerBytes x, 
+     3:IntegerBytes y,
+     4:IntegerBytes r,
+     5:IntegerBytes s,
+     6:Script redeem_script
+   ),
+ */
+
+   bool cppVerifySignature(
+     1:binary data,
+     2:IntegerBytes x, 
+     3:IntegerBytes y,
+     4:IntegerBytes r,
+     5:IntegerBytes s
+   ),
+
+   bool broadcastTransaction(
+     1:Transaction tx
+   ),
+
+   bool verifyTransaction(
+     1:Transaction tx,
+     2:IntegerBytes x, 
+     3:IntegerBytes y,
+     4:i32 value
+   ),
+
+   bool waitForTransaction(
+     1:Transaction tx,
+     2:i32 depth,
+   ),
+
+   bool waitForTransactionByOutput(
+     1:Address addr,
+     2:i32 depth,
+   ),
+
+   IntegerPair getSignature(
+     1:Address addr,
+   ),
 }

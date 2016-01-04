@@ -24,8 +24,8 @@ int main(){
 
 	for(int i = -1; i < 10; ++i){
 
-		shared_signature::S s(&rng, ec_parameters);
-		shared_signature::B b(&rng, ec_parameters, s.get_paillier_n(), s.get_paillier_g());
+		shared_signature::S s;
+		shared_signature::B b(s.get_paillier_n(), s.get_paillier_g());
 
 		byte message[MESSAGE_LENGTH];
 

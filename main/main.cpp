@@ -1,5 +1,5 @@
-#include "../bitcoin/bitcoin.h"
 #include "sell_information.h"
+#include "signature_key.h"
 
 #include <cryptopp/integer.h>
 #include <cryptopp/osrng.h>
@@ -8,6 +8,7 @@
 #include <cryptopp/eccrypto.h>
 
 #include <iostream>
+#include <vector>
 
 using sell_information::Seller;
 using sell_information::Buyer;
@@ -19,13 +20,12 @@ using namespace std;
 int main(){
 	Integer p = 17;
 	Integer q = 19;
-	unsigned price = 20;
+	unsigned price = 20000;  // TODO
 
-	BitcoinAddress seller_bitcoin_addr;
-	BitcoinAddress buyer_bitcoin_addr;
+  vector<sell_information::BaseParty> v;
 
-	Seller seller(p, q, price, seller_bitcoin_addr);
-	Buyer buyer(p*q, price, buyer_bitcoin_addr);
+	Seller seller(p, q, price);
+	Buyer buyer(p*q, price);
 
 	SellInformationProtocol sell_information;
 

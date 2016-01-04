@@ -6,8 +6,12 @@ using namespace std;
 
 using common::L;
 using common::K;
+using common::integer2string;
 
 namespace sell_information {
+
+BaseParty SingleSeller::base_party = BaseParty(9091);
+BaseParty SingleBuyer::base_party = BaseParty(9092);
 
 array<common::TSHA256Digest, L> genKeys(const vector<byte>& signature) {
 	array<common::TSHA256Digest, L> keys;
@@ -25,6 +29,25 @@ array<common::TSHA256Digest, L> genKeys(const vector<byte>& signature) {
 	return keys;
 }
 
+// TODO change name
+void SingleSeller::verifyT2Signature() {
+  Transaction res;
+  base_party.client.getSignedTransaction(
+    res,
+    T2,
+    integer2string(shared_signature_s.get_Q().x),
+    integer2string(shared_signature_s.get_Q().y),
+    integer2string(shared_signature_s.get_r()),
+    integer2string(shared_signature_s.get_s()),
+    T1_output_script
+  );
+
+  if (res.size() == 0) {
+    throw ProtocolException("verify T2 signature in bitcoinj failed");
+  }
+  T2 = res;
+}
+
 void SingleSeller::genKeysAndSetupCommits(){
 	vector<byte> signature = shared_signature_s.get_signature();
 
@@ -33,6 +56,23 @@ void SingleSeller::genKeysAndSetupCommits(){
 		keys_commits[i].m.assign(keys[i].begin(), keys[i].end());
 	}
 	signature_commit.m = signature;
+}
+
+void SingleBuyer::createT1AndT2() {
+  CryptoPP::ECPPoint pk = shared_signature_b.get_Q();
+
+  string x = integer2string(pk.x);
+  string y = integer2string(pk.y);
+
+  base_party.client.createSend(T1, x, y, 20000); // TODO price
+  
+  if (T1.size() == 0) {
+    throw ProtocolException("T1 is empty");
+  }
+
+  base_party.client.createSendTransactionToAddress(T2, T1, x, y, seller_address);
+  base_party.client.getOutputScript(T1_output_script, T1, x, y);
+  base_party.client.hashForSignature(T2_hash, T2, x, y, T1_output_script);
 }
 
 void SingleBuyer::verifyKeys() {
@@ -45,68 +85,102 @@ void SingleBuyer::verifyKeys() {
 	}
 }
 
-
 void SingleSellInformationProtocol::init(SingleSeller *, SingleBuyer *) {
 	
 }
 
+// TODO remove it 
+// verify the signature using crypto++ verifier
+int cryptopp_test(ECPPoint Q, Integer r, Integer s, byte *message, unsigned message_length){
+  std::vector<byte> signature(64);
+  r.Encode(signature.data(), 32);
+  s.Encode(signature.data()+32, 32);
+
+  ECDSA<ECP, SHA256>::PublicKey publicKey;
+  publicKey.Initialize(ASN1::secp256k1(), Q);
+
+  ECDSA<ECP, SHA256>::Signer signer;
+  ECDSA<ECP, SHA256>::Verifier verifier(publicKey);
+
+  bool result = verifier.VerifyMessage( message, message_length, signature.data(), 64);
+  if(!result){
+    // cerr << "FAIL cryptopp" << endl;
+    return 1;
+  }
+  return 0;
+}
+
 void SingleSellInformationProtocol::exec(SingleSeller *seller, SingleBuyer *buyer) {
-	shared_signature::SharedSignature shared_signature_protocol;
+  shared_signature::SharedSignature shared_signature_protocol;
 
-	/* Generate shared secret key for ECDSA */
-	shared_signature_protocol.init(&seller->shared_signature_s, &buyer->shared_signature_b);
+  /* Generate shared secret key for ECDSA */
+  shared_signature_protocol.init(&seller->shared_signature_s, &buyer->shared_signature_b);
 
-	buyer->createT1();
+  buyer->setSellerAddress(seller->getAddress());
 
-	buyer->createT2();
+  buyer->createT1AndT2();
 
-	seller->setT2(buyer->getT2());	// TODO verify T2
+  seller->setT1OutputScript(buyer->getT1OutputScript());
+  seller->setT2(buyer->getT2());
 
-	auto T2_bytes = buyer->getT2().get_bytes();
+  /* Sign T2 */ /* TODO both should verify data */
+  buyer->shared_signature_b.set_data(
+    (byte*) buyer->getT2Hash().data(), 
+    buyer->getT2Hash().size()
+  );
 
-	/* Sign T2 */
-	buyer->shared_signature_b.set_data(T2_bytes.data(), T2_bytes.size());
+  shared_signature_protocol.exec(&seller->shared_signature_s, &buyer->shared_signature_b);
 
-	shared_signature_protocol.exec(&seller->shared_signature_s, &buyer->shared_signature_b);
+  ECPPoint Q = seller->shared_signature_s.get_Q();
+  bool res = cryptopp_test(
+    Q, 
+    seller->shared_signature_s.get_r(),
+    seller->shared_signature_s.get_s(),
+    (byte*) buyer->getT2Hash().data(), 
+    buyer->getT2Hash().size()
+  );
 
-	timed_commitment::commit(&seller->timed_commitment_commiter, &buyer->timed_commitment_receiver, K, BitUtils::integer_to_bits(seller->shared_signature_s.get_ds()));
+  /* Verify signature in bitcoinj */
+  seller->verifyT2Signature();
 
-	seller->genKeysAndSetupCommits();
+  timed_commitment::commit(&seller->timed_commitment_commiter, &buyer->timed_commitment_receiver, K, BitUtils::integer_to_bits(seller->shared_signature_s.get_ds()));
 
-	sha_commitment::ShaCommitment sha_commitment_protocol;
-	
-	for(unsigned i = 0; i < L; ++i) {
-		sha_commitment_protocol.init(&seller->keys_commits[i], &buyer->keys_commits[i]);
-		sha_commitment_protocol.exec(&seller->keys_commits[i], &buyer->keys_commits[i]);
-	}
+  seller->genKeysAndSetupCommits();
 
-	sha_commitment_protocol.init(&seller->signature_commit, &buyer->signature_commit);
-	sha_commitment_protocol.exec(&seller->signature_commit, &buyer->signature_commit);
+  sha_commitment::ShaCommitment sha_commitment_protocol;
+
+  for(unsigned i = 0; i < L; ++i) {
+    sha_commitment_protocol.init(&seller->keys_commits[i], &buyer->keys_commits[i]);
+    sha_commitment_protocol.exec(&seller->keys_commits[i], &buyer->keys_commits[i]);
+  }
+
+  sha_commitment_protocol.init(&seller->signature_commit, &buyer->signature_commit);
+  sha_commitment_protocol.exec(&seller->signature_commit, &buyer->signature_commit);
 }
 
 void SingleSellInformationProtocol::open(SingleSeller *single_seller, SingleBuyer *single_buyer) {
-	/* verify 
-	 * - init
-	 * - signing
-	 * TODO
-	 */
+  /* verify 
+   * - init
+   * - signing
+   * TODO
+   */
 
-	shared_signature::SharedSignature shared_signature_protocol;
-	shared_signature_protocol.open(&single_seller->shared_signature_s, &single_buyer->shared_signature_b);
+  shared_signature::SharedSignature shared_signature_protocol;
+  shared_signature_protocol.open(&single_seller->shared_signature_s, &single_buyer->shared_signature_b);
 
-	timed_commitment::open_commitment(&single_seller->timed_commitment_commiter, &single_buyer->timed_commitment_receiver);
+  timed_commitment::open_commitment(&single_seller->timed_commitment_commiter, &single_buyer->timed_commitment_receiver);
 
-	sha_commitment::ShaCommitment sha_commitment_protocol;
+  sha_commitment::ShaCommitment sha_commitment_protocol;
 
-	for(unsigned i = 0; i < L; ++i) {
-		sha_commitment_protocol.open(&single_seller->keys_commits[i], &single_buyer->keys_commits[i]);
-	}
+  for(unsigned i = 0; i < L; ++i) {
+    sha_commitment_protocol.open(&single_seller->keys_commits[i], &single_buyer->keys_commits[i]);
+  }
 
-	sha_commitment_protocol.open(&single_seller->signature_commit, &single_buyer->signature_commit);
+  sha_commitment_protocol.open(&single_seller->signature_commit, &single_buyer->signature_commit);
 
-	single_buyer->verifyKeys();
+  single_buyer->verifyKeys();
 
-	single_buyer->setOpenVerified(single_buyer->shared_signature_b.getOpenVerified());
+  single_buyer->setOpenVerified(single_buyer->shared_signature_b.getOpenVerified());
 }
 
 }

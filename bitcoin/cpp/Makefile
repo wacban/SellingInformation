@@ -8,16 +8,19 @@ INC := -I$(THRIFT_DIR) -I$(BOOST_DIR)
 
 .PHONY: all generate clean 
 
-all: generate bitcoin_utils_client
+all: generate test_bitcoin_utils 
 
 generate:
 	thrift --gen cpp ../bitcoin_utils.thrift
 
 %.o: %.cpp
-	$(CXX) -Wall -DHAVE_INTTYPES_H -DHAVE_NETINET_IN_H $(INC) -c $< -o $@
+	$(CXX) -std=c++11 -Wall -DHAVE_INTTYPES_H -DHAVE_NETINET_IN_H $(INC) -c $< -o $@ -lcryptopp
 
-bitcoin_utils_client: bitcoin_utils_client.o $(GEN_OBJ)
-	$(CXX) $^ -o $@ -L/usr/local/lib -lthrift 
+test_bitcoin_utils: test_bitcoin_utils.o $(GEN_OBJ)
+	$(CXX) $^ -o $@ -std=c++11 -L/usr/local/lib -lthrift -lcryptopp
+
+bitcoin_utils_server: bitcoin_utils_server.o $(GEN_OBJ)
+	$(CXX) $^ -o $@ -std=c++11 -L/usr/local/lib -lthrift -lcryptopp
 
 clean:
-	rm -rf *.o gen-cpp/*.o bitcoin_utils_client gen-cpp
+	rm -rf *.o gen-cpp/*.o test_bitcoin_utils gen-cpp

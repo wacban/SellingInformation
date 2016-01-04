@@ -16,8 +16,10 @@ namespace shared_signature {
 	// take ret_byte_count leftmost bytes
 	// convert to Integer
 	CryptoPP::Integer m_to_int(byte *m, unsigned m_len, unsigned ret_byte_count);
+  
+  std::vector<byte> encode_signature(CryptoPP::Integer r, CryptoPP::Integer s);
 
-	class S {
+  class S {
 		private:
 			CryptoPP::ECP ec;
 			CryptoPP::ECPPoint G; // subgroup generator - base point
@@ -85,15 +87,8 @@ namespace shared_signature {
 			}
 			
 			std::vector<byte> get_signature(){
-
-				std::vector<byte> signature;
-				signature.resize(64);
-
-				r.Encode(signature.data(), 32);
-				s.Encode(signature.data() + 32, 32);
-
-				return signature;
-			}
+        return encode_signature(r, s);
+      }
 
 			void cheat(){
 				r = CryptoPP::Integer(common::rng(), 1, n);

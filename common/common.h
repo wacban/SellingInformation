@@ -34,6 +34,16 @@ std::vector<T> concatenate(const std::vector<T>& x, const std::vector<T>& y) {
 
 std::vector<byte> to_bytes(const CryptoPP::Integer& x);
 
+std::string integer2string(const CryptoPP::Integer ix);
+
+std::string string2hex(const std::string& input);
+
+std::vector<byte> string2v(const std::string& input);
+
+std::string v2string(const std::vector<byte>& input);
+
+
+
 }
 
 #endif 
