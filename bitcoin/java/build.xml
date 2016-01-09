@@ -96,6 +96,12 @@
       </java>
   </target>
 
+  <target name="info" description="Print balance and address" depends="compile">
+      <java classname="BalanceAndAddress" fork="true"
+        classpathref="bitcoin_utils.classpath" failonerror="false">
+      </java>
+  </target>
+
   <target name="clean">
     <delete dir="${build}" />
     <delete dir="${gen}"/>

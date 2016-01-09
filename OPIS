@@ -10,6 +10,10 @@ in bitcoin/java run ant compile
 
 Usage:
 
+To execute protocol buyer needs to have enough bitcoins on his account.
+To see its balance and receive address run `ant info` in bitcoin/java.
+Transfer some bitcoins into buyers address before starting the protocol.
+
 in bitcoin/java start servers for seller and buyer (in separate processes)
 ant seller
 ant buyer
