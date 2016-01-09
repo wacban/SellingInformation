@@ -1,9 +1,27 @@
 
 
+Usage:
+install cryptopp, thrift
+
+Complilation:
+run make in all directories except bitcoin
+in bitcoin/cpp run make
+in bitcoin/java run ant compile
+
+Usage:
+
+in bitcoin/java start servers for seller and buyer (in separate processes)
+ant seller
+ant buyer
+
+in main
+./main
+
 -------------------------------------------------------------------------------
 Jak uruchomić: 
 
 zainstalować cryptopp
+zainstalować thrift
 
 cd main
 make
@@ -15,9 +33,11 @@ Co jest napisane w tej chwili:
 part 1 handshake
 part 2 generating signature and keys (w cut and choose)
 part 3 validating cut and choose (do sprawdzenia)
-part 4 częściowo
+part 4 generating square roots
+part 5 payment implemented, redeeming after time lock is broken not implemented
 
-brakuje part 5 i bitcoinowej części
+brakuje part 5 odzyskiwania kasy i ogłady. Trzeba jeszcze dopisać lepszy time
+lock.
 
 -------------------------------------------------------------------------------
 Organizacja kodu:
