@@ -138,7 +138,7 @@ void SingleSellInformationProtocol::exec(SingleSeller *seller, SingleBuyer *buye
     seller->shared_signature_s.get_s(),
     (byte*) buyer->getT2Hash().data(), 
     buyer->getT2Hash().size()
-  );
+  ); // TODO check res
 
   /* Verify signature in bitcoinj */
   seller->verifyT2Signature();

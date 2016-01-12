@@ -80,6 +80,16 @@ public class BitcoinUtilsHandler implements BitcoinUtils.Iface {
     System.out.println("ping()");
   }
 
+  public void sleep() {
+    try {
+      System.out.println("sleep start");
+      Thread.sleep(10000);
+      System.out.println("sleep end");
+    } catch (Exception e) {
+      System.out.println(e);
+    }
+  }
+
   public void printBalance(){
     System.out.println("Balance: " + kit.wallet().getBalance());
   }
@@ -366,7 +376,6 @@ public class BitcoinUtilsHandler implements BitcoinUtils.Iface {
     Transaction tx = new Transaction(kit.params(), btx.array());
     System.out.println(tx);
     try {
-      // kit.peerGroup().broadcastTransaction(tx).future().get(20, TimeUnit.SECONDS);
       kit.peerGroup().broadcastTransaction(tx).future().get();
     } catch (Exception e) {
       System.out.println("broadcastTransaction failed");
@@ -386,6 +395,7 @@ public class BitcoinUtilsHandler implements BitcoinUtils.Iface {
   }
 
   public boolean waitForTransactionHelper(Transaction tx, int depth) {
+    System.out.println("waitForTransactionHelper");
     System.out.println(tx);
 
     try {
@@ -398,11 +408,11 @@ public class BitcoinUtilsHandler implements BitcoinUtils.Iface {
       System.out.println(confidence);
       confidence.getDepthFuture(depth).get(1, TimeUnit.MINUTES);
     } catch (Exception e) {
-      System.out.println("waitForTransaction failed");
+      System.out.println("waitForTransactionHelper failed");
       System.out.println(e);
       return false;
     }
-    System.out.println("waitForTransaction finished");
+    System.out.println("waitForTransactionHelper finished");
     return true;
   }
  
@@ -484,5 +494,59 @@ public class BitcoinUtilsHandler implements BitcoinUtils.Iface {
       ByteBuffer.wrap(signature.s.toByteArray())
     );
     // return ByteBuffer.wrap(chunks.get(0).data);
+  }
+
+  public boolean redeemTransaction(ByteBuffer btx, ByteBuffer bsk, ByteBuffer bx, ByteBuffer by) {
+    try {
+      printl();
+      printl();
+      printl();
+      System.out.println("Redeem transaction");
+      Transaction tx_src = new Transaction(kit.params(), btx.array());
+      printl();
+      System.out.println("tx src:");
+      System.out.println(tx_src);
+      printl();
+
+      BigInteger sk = new BigInteger(1, bsk.array());
+      printl();
+      System.out.println("sk");
+      System.out.println(sk);
+      printl();
+      ECKey key = ECKey.fromPrivate(sk, false);
+      printl();
+      System.out.println("key");
+      System.out.println(key);
+      printl();
+
+      Address addr =  kit.wallet().freshReceiveAddress();
+      Transaction tx = new Transaction(kit.params());
+
+      Address output_addr = getAddressFromXY(bx, by);
+      TransactionOutput output = getOutput(tx_src, output_addr);
+      Coin value = output.getValue();
+      value = value.subtract(Wallet.SendRequest.DEFAULT_FEE_PER_KB);
+
+      tx.addOutput(value, addr);
+
+      tx.addSignedInput(output, key);
+
+      printl();
+      System.out.println("tx");
+      System.out.println(tx);
+      printl();
+
+      tx.getInput(0).verify(output);
+      kit.peerGroup().broadcastTransaction(tx).future().get();
+
+      printl();
+      printl();
+      printl();
+      return waitForTransactionHelper(tx, 1); // TODO depth in param
+    } catch (Exception e) {
+      System.out.println("redeem transaction: broadcastTransaction failed");
+      System.out.println(e);
+      return false;
+    }
   }
 }

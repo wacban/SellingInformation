@@ -28,9 +28,41 @@ import org.apache.log4j.*;
 import java.util.List;
 import java.math.BigInteger;
 
+import java.lang.Thread;
+
+class Ping extends Thread {
+  BitcoinUtils.Client client;
+
+  public Ping() {
+    try {
+    int port = 9091;
+    System.out.println("Port: " + port);
+    TTransport transport;
+    transport = new TSocket("localhost", port);
+    transport.open();
+
+    TProtocol protocol = new  TBinaryProtocol(transport);
+    client = new BitcoinUtils.Client(protocol);
+    } catch (Exception e) {
+      System.out.println(e);
+    }
+  }
+
+  public void run(){
+    try {
+      System.out.println("sleep start");
+      client.sleep();
+      System.out.println("sleep end");
+    } catch (Exception e) {
+      System.out.println(e);
+    }
+  }
+}
+
 public class JavaClient {
   public static void main(String [] args) {
     try {
+      /*
       int port = 9091;
       System.out.println("Port: " + port);
       TTransport transport;
@@ -39,12 +71,25 @@ public class JavaClient {
 
       TProtocol protocol = new  TBinaryProtocol(transport);
       BitcoinUtils.Client client = new BitcoinUtils.Client(protocol);
+      */
 
-      perform(client);
+      Thread[] t = new Thread[10];
+      
+      for(int i = 0; i < 10; ++i) {
+        t[i] = new Ping();
+      }
 
-      transport.close();
-    } catch (TException x) {
-      x.printStackTrace();
+      for(int i = 0; i < 10; ++i) {
+        t[i].start();
+      }
+      
+      for(int i = 0; i < 10; ++i) {
+        t[i].join();
+      }
+
+      // transport.close();
+    } catch (Exception e) {
+      System.out.println(e);
     } 
   }
 

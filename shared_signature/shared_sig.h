@@ -136,6 +136,10 @@ namespace shared_signature {
 			B(CryptoPP::Integer paillier_n,
 				CryptoPP::Integer paillier_g);
 
+      CryptoPP::Integer get_n(){
+        return n;
+      }
+
 			CryptoPP::ECPPoint get_Qs(){
 				return Qs;
 			}
@@ -147,6 +151,10 @@ namespace shared_signature {
 			CryptoPP::ECPPoint get_Q(){
 				return Q;
 			}
+
+			CryptoPP::Integer get_db(){
+				return db;
+			} 
 
 			CryptoPP::Integer get_r(){
 				return r;

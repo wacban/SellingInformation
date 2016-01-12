@@ -15,6 +15,7 @@ struct IntegerPair {
 
 service BitcoinUtils { 
    void ping(),
+   void sleep(),
    
    /**
     * Returns a fresh address for the wallet.
@@ -102,5 +103,12 @@ service BitcoinUtils {
 
    IntegerPair getSignature(
      1:Address addr,
+   ),
+
+   bool redeemTransaction(
+     1:Transaction tx,
+     2:IntegerBytes sk,
+     3:IntegerBytes x, 
+     4:IntegerBytes y,
    ),
 }

@@ -13,3 +13,4 @@
 - cut and choose verify that i is in good range [0, T)
 - some constant for AES key length
 - why not stop protocol when discovered that y is not quadratic residue
+- BitUtils vs common - merge and use only one of them

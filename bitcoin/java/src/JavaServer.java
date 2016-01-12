@@ -7,6 +7,8 @@ import org.apache.thrift.transport.TServerSocket;
 import org.apache.thrift.transport.TServerTransport;
 import org.apache.thrift.transport.TSSLTransportFactory.TSSLTransportParameters;
 
+import java.util.concurrent.Executors;
+
 import bitcoin_utils.*;
 
 public class JavaServer {
@@ -43,9 +45,13 @@ public class JavaServer {
   public static void simple(BitcoinUtils.Processor processor, Integer port) {
     try {
       TServerTransport serverTransport = new TServerSocket(port);
-      TServer server = new TSimpleServer(new Args(serverTransport).processor(processor));
+      TServer server = new TThreadPoolServer(new TThreadPoolServer.Args(serverTransport).processor(processor).executorService(Executors.newFixedThreadPool(16)));
 
-      System.out.println("Starting the simple server...");
+      System.out.println(server);
+
+      // TServer server = new TSimpleServer(new Args(serverTransport).processor(processor));
+
+      System.out.println("Starting the theadpool server...");
       server.serve();
     } catch (Exception e) {
       e.printStackTrace();

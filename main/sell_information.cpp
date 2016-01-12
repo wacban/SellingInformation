@@ -59,6 +59,10 @@ array<unsigned, L/2> Seller::acceptSubset(const std::array<unsigned, common::L/2
 		unsigned ind = indices[i];
 		Integer val = values[i];
 		if (val >= n/2) {
+      Log("val:");
+      Log(val);
+      Log("n/2");
+      Log(n/2);
 			throw ProtocolException("xi >= n/2");
 		}
 		if ((val*val) % n != y[ind]) {
@@ -76,6 +80,7 @@ array<unsigned, L/2> Seller::acceptSubset(const std::array<unsigned, common::L/2
 }
 
 void Seller::accept_T1(const Transaction& T1) {
+  Log("accept t1");
 	this->T1 = T1;
 
   bool res = single_seller.base_party.client.verifyTransaction(
@@ -90,7 +95,6 @@ void Seller::accept_T1(const Transaction& T1) {
   } else {
     Log("verify transaction worked!");
   }
-
   
   /* TODO verify T2 */
 
@@ -151,6 +155,7 @@ void Buyer::verifyRoot(unsigned ind, const vector<byte>& key, const vector<byte>
 }
 
 void Buyer::make_payment() {
+  Log("make payment");
   bool res = single_buyer.base_party.client.broadcastTransaction(
     single_buyer.getT1()
   );
@@ -162,32 +167,50 @@ void Buyer::make_payment() {
 }
 
 void Buyer::solve_time_lock(atomic_bool &finished) {
-  Log("solve time lock sleeping forever");
-	while(true) {
-	  sleep(1);
-	}
-	
-	this->single_buyer.timed_commitment_receiver.force_open_smart();
+ 
+  Log("solve time lock started");
+	auto ds_bytes = this->single_buyer.timed_commitment_receiver.force_open_smart();
+  Log("solve time lock finished");
+  
+  BaseParty base_party(9092);
+
+  Integer ds = BitUtils::bits_to_integer(ds_bytes);
+  Integer d = ds * this->single_buyer.shared_signature_b.get_db();
+  d = d % single_buyer.shared_signature_b.get_n();
+
+  bool res = base_party.client.redeemTransaction(
+    single_buyer.getT1(), 
+    common::integer2string(d),   
+    common::integer2string(single_buyer.shared_signature_b.get_Q().x),
+    common::integer2string(single_buyer.shared_signature_b.get_Q().y)
+  );
+  
+  if (!res) {
+    // TODO what should happen at this point?
+    Log("solve time lock - redeem transaction failed");
+    Log("solve time sleeping forever!!!");
+    while(true) {
+      sleep(1);
+    }
+  }
+
+  Log("Hurray!");
+  Log("solved time lock and got money back");
+
 	finished = true;	
 }
 
 void Buyer::get_signature(atomic_bool &finished) {
-	/*if (common::rng().GenerateBit() == 1) {
-		Log("get singature sleeping");
-		while(true) {
-			sleep(1);
-		}
-	}
-  */
+  Log("get signature");
   bool res;
-	Log("get signature not sleeping");
-  res = single_buyer.base_party.client.waitForTransactionByOutput(single_buyer.getSellerAddress(), 1); // TODO better security
+  BaseParty base_party(9092);
+  res = base_party.client.waitForTransactionByOutput(single_buyer.getSellerAddress(), 1); // TODO better security
   if (!res) {
     throw ProtocolException("wait for transaction by output failed");
   }
 
   bitcoin_utils::IntegerPair signature;
-  single_buyer.base_party.client.getSignature(signature, single_buyer.getSellerAddress());
+  base_party.client.getSignature(signature, single_buyer.getSellerAddress());
 
   Integer r = Integer((byte*) signature.r.data(), signature.r.size());
   Integer s = Integer((byte*) signature.s.data(), signature.s.size());
@@ -397,9 +420,10 @@ void SellInformationProtocol::exec(Seller *seller, Buyer *buyer){
 
 	seller->accept_T1(buyer->single_buyer.getT1());
 
-	seller->accept_payment();	 // last function for seller
+  // comment next line to prevent seller from accepting payment
+  // in this case buyer will break time lock and get money back.
+	// seller->accept_payment();	 // last function for seller
  
- 	// buyer->set_signature(seller->single_seller.shared_signature_s.get_signature()); // for testing TODO remove
 	buyer->wait_for_signature_or_time_lock(); // last function for buyer
 }
 
