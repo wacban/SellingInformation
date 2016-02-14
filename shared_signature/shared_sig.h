@@ -16,14 +16,20 @@ namespace shared_signature {
 	// take ret_byte_count leftmost bytes
 	// convert to Integer
 	CryptoPP::Integer m_to_int(byte *m, unsigned m_len, unsigned ret_byte_count);
+
+	CryptoPP::Integer hash_m_to_int(byte *m, unsigned m_len, unsigned ret_byte_count);
   
   std::vector<byte> encode_signature(CryptoPP::Integer r, CryptoPP::Integer s);
+
+  bool verify(CryptoPP::ECPPoint Q, byte *, unsigned len, CryptoPP::Integer r, CryptoPP::Integer s);
 
   class S {
 		private:
 			CryptoPP::ECP ec;
 			CryptoPP::ECPPoint G; // subgroup generator - base point
 			CryptoPP::Integer n;  // subgroup order
+
+			std::vector<byte> data;
 
 			CryptoPP::Integer ds;
 			CryptoPP::Integer ks;
@@ -45,6 +51,22 @@ namespace shared_signature {
 		public:
 
 			S();
+
+			byte *get_data(){
+				return data.data();
+			}
+
+			unsigned get_data_length(){
+        if (data.size() == 0) {
+          throw ProtocolException("Data is empty!");
+        }
+				return data.size();
+			}	
+
+			void set_data(byte *data, unsigned length){
+				this->data.resize(length);
+				copy(data, data + length, this->data.begin());
+			}
 
 			CryptoPP::Integer get_ds(){
 				return ds;

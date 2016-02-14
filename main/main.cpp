@@ -39,8 +39,6 @@ int main(){
   cout << "cheat 0/1: ";
   cin >> cheat;
 
-  vector<sell_information::BaseParty> v;
-
 	Seller seller(p, q, price, cheat);
 	Buyer buyer(p*q, price);
 

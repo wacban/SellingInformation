@@ -129,6 +129,11 @@ void SingleSellInformationProtocol::exec(SingleSeller *seller, SingleBuyer *buye
     buyer->getT2Hash().size()
   );
 
+  seller->shared_signature_s.set_data(
+    (byte*) buyer->getT2Hash().data(), 
+    buyer->getT2Hash().size()
+  );
+
   shared_signature_protocol.exec(&seller->shared_signature_s, &buyer->shared_signature_b);
 
   ECPPoint Q = seller->shared_signature_s.get_Q();
