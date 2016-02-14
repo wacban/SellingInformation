@@ -97,7 +97,6 @@ void Seller::accept_T1(const Transaction& T1) {
   }
   
   /* TODO verify T2 */
-
   res = single_seller.base_party.client.waitForTransaction(T1, 1); // TODO better security
   if (!res) {
     throw ProtocolException("wait for t1 failed!");
@@ -107,6 +106,9 @@ void Seller::accept_T1(const Transaction& T1) {
 }
 
 void Seller::accept_payment() {
+  if (cheat){
+    return ;
+  }
   bool res = single_seller.base_party.client.broadcastTransaction(
     single_seller.getT2()
   );
@@ -116,9 +118,6 @@ void Seller::accept_payment() {
   } else {
     Log("accept payment worked!");
   }
-
-	// broadcast(this->single_seller.get_T2());
-  // TODO
 }
 
 void Buyer::pickR(){
@@ -420,9 +419,7 @@ void SellInformationProtocol::exec(Seller *seller, Buyer *buyer){
 
 	seller->accept_T1(buyer->single_buyer.getT1());
 
-  // comment next line to prevent seller from accepting payment
-  // in this case buyer will break time lock and get money back.
-	// seller->accept_payment();	 // last function for seller
+	seller->accept_payment();	 // last function for seller
  
 	buyer->wait_for_signature_or_time_lock(); // last function for buyer
 }

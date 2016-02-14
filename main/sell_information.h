@@ -23,6 +23,7 @@ class Seller {
 	CryptoPP::Integer n;
 
 	unsigned price;
+  bool cheat;
 
 	common::SquareRoot square_root;
 
@@ -43,8 +44,9 @@ class Seller {
 
 	Seller(CryptoPP::Integer p, 
 				CryptoPP::Integer q, 
-				unsigned price):
-		p(p), q(q), n(p*q), price(price), square_root(p, q) {}
+				unsigned price,
+        bool cheat):
+		p(p), q(q), n(p*q), price(price), cheat(cheat), square_root(p, q) {}
 
 	CryptoPP::Integer get_n(){
 		return p*q;

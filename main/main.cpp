@@ -18,19 +18,43 @@ using namespace CryptoPP;
 using namespace std;
 
 int main(){
-	Integer p = 17;
-	Integer q = 19;
-	unsigned price = 20000;  // TODO
+
+	Integer p;
+	Integer q;
+	unsigned price;
+
+  bool cheat;
+
+  cout << "Input primes" << endl;
+  cout << "p: ";
+  cin >> p;
+  cout << "q: ";
+  cin >> q;
+
+  cout << "Input price in satoshis" << endl;
+  cout << "price: ";
+  cin >> price;
+
+  cout << "Should seller cheat and not accept payment?" << endl;
+  cout << "cheat 0/1: ";
+  cin >> cheat;
 
   vector<sell_information::BaseParty> v;
 
-	Seller seller(p, q, price);
+	Seller seller(p, q, price, cheat);
 	Buyer buyer(p*q, price);
 
 	SellInformationProtocol sell_information;
 
+  try {
+
 	sell_information.init(&seller, &buyer);
 	sell_information.exec(&seller, &buyer);
+
+  } catch (ProtocolException e) {
+    cerr << "Protocol exception" << endl;
+    cerr << e.what() << endl;
+  }
 
 	cout << buyer.p << "\t" << buyer.q << endl;
 

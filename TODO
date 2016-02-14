@@ -1,6 +1,5 @@
 
 
-- bitcoin
 - add exceptions and remove messages
 - logging
 - CommonUtils - rng, ec_parameters, ..
@@ -14,3 +13,4 @@
 - some constant for AES key length
 - why not stop protocol when discovered that y is not quadratic residue
 - BitUtils vs common - merge and use only one of them
+
